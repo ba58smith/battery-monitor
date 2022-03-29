@@ -2,7 +2,14 @@
 
 #include <Arduino.h>
 
+#include "config.h"
 #include "functions.h"
+#include "reyax_lora.h"
+
+// If you change the NETWORK_ID (below) or NODE_ADDRESS (in config.h):
+// Un-comment "#define LORA_SETUP_REQUIRED", upload and run once, then comment out "#define LORA_SETUP_REQUIRED".
+// That will prevent writing the NETWORK_ID and NODE_ADDRESS to EEPROM every run.
+#define LORA_SETUP_REQUIRED
 
 unsigned long lastWebUpdate = 0; 
 unsigned long mainLoopDelay = 500;
@@ -10,17 +17,27 @@ unsigned long mainLoopCycle=0;
 bool firstTime = true;
 unsigned long webUpdateDelay = 600000; // delay 10 minutes
 
+ReyaxLoRa lora(LORA_NETWORK_ID, LORA_BASE_STATION_ADDRESS);
 
-//++++++++++++++++++++++++++++++  SETUP +++++++++++++++++++++++++++++++++++++
 void setup() {
-  Serial.begin(115200);
-  Serial2.begin(115200);
-  delay(500);
-  pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(buzzer, OUTPUT);
-  digitalWrite(buzzer, LOW);
-  pinMode(26,OUTPUT); // this is for the big blue LED
   
+  // For Serial Monitor display of debug messages
+  Serial.begin(115200);
+
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+  digitalWrite(buzzerPin, LOW);
+  pinMode(blueLED,OUTPUT);
+
+  lora.initialize();
+
+#ifdef LORA_SETUP_REQUIRED
+  lora.one_time_setup();
+#endif
+
+  // Use the appropriate "set" method(s) here to change most of
+  // the LoRa parameters if desired.
+
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
     Serial.println(F("SSD1306 allocation failed"));
     while (1); // Don't proceed, loop forever
@@ -39,6 +56,8 @@ void setup() {
   display.setTextSize(1);
   display.drawPixel(0, 0, SSD1306_WHITE);
   display.setTextColor(SSD1306_WHITE);
+
+  // Connect to wifi
   display.setCursor(0,0);
   display.print(F("Connecting to: "));
   display.setCursor(0,20);
@@ -46,12 +65,9 @@ void setup() {
   display.println(F(SSID));
   display.display();
   display.setTextSize(1);
-  
   connectToWifi();
 
-  Serial2.print("AT\r\n");
-  setLoRaParameters(); // sets up all the lora settings
-  delay(500);
+  
 } // setup()
 
 
@@ -62,7 +78,6 @@ void loop()
   {
     mainLoopCycle = currentTime;
     firstTime = false;
-    //Serial.println("looping...");
     checkformessages();
     if (currentTime > lastWebUpdate + webUpdateDelay)
     {

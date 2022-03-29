@@ -18,7 +18,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define line3 47  // 40
 //#define line4 55
 
-#define buzzer  4
+#define buzzerPin  4
+#define blueLED 26
 #define VOLTAGE_ALARM_LEVEL 12.2
 
 String battery1="";
@@ -120,27 +121,27 @@ void unSeccessfulWebUpdate(){
 
 void turnOnLed(){
   digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on
-  digitalWrite(26,HIGH);
+  digitalWrite(blueLED,HIGH);
 }
 
 void turnOFFLed(){
   digitalWrite(LED_BUILTIN, LOW);   // turn the LED on
-  digitalWrite(26,LOW); 
+  digitalWrite(blueLED,LOW); 
 }
 
 void soundAlarm(){
   for(int i = 0; i < 2; ++i){
-    digitalWrite(buzzer, HIGH);
+    digitalWrite(buzzerPin, HIGH);
     delay(100);
-    digitalWrite(buzzer, LOW);
+    digitalWrite(buzzerPin, LOW);
     delay(300);
    }
-  digitalWrite(buzzer, LOW);
+  digitalWrite(buzzerPin, LOW);
 }
 
 // I don't think this is necessary, since soundAlarm() does what this does, at the end
 void stopAlarm(){
-    digitalWrite(buzzer, LOW);
+    digitalWrite(buzzerPin, LOW);
 }    
 
 void checkLastUpdate(){
@@ -404,32 +405,19 @@ void checkincoming()
 }
 // called only in setup()
 void setLoRaParameters(){
-  Serial.print("Get address:");
   Serial2.print("AT+ADDRESS=10\r\n");
     delay(200);
   Serial2.print("AT+NETWORKID=2\r\n");
   delay(200);
-  Serial2.print("AT+ADDRESS?\r\n");
-  delay(200);
-  checkincoming();
   Serial2.print("AT+IPR=115200\r\n");
    delay(200);
    checkincoming();
-  Serial2.print("AT+BAND?\r\n");
-  checkincoming();
-  delay(1000);
   Serial2.print("AT+PARAMETER=12,7,1,4\r\n");
    delay(200);
-    checkincoming();
-  Serial2.print("AT+PARAMETER?\r\n");
-  //Serial.print("AT+PARAMETER?\r\n");
-  delay(1000);
    checkincoming();
   Serial2.print("AT+CRFOP=15\r\n");
    delay(200);
    checkincoming();
-  //Serial2.print("AT+CRFOP?\r\n");
-  //Serial.print("AT+CRFOP?\r\n");
 }
 
 void transmitToWeb(unsigned long& lastUpdate){
@@ -474,10 +462,10 @@ void transmitToWeb(unsigned long& lastUpdate){
       Serial.println("WiFi Disconnected");
       connectToWifi();
     }
-    //digitalWrite(buzzer, HIGH);
+    //digitalWrite(buzzerPin, HIGH);
     turnOnLed();
     delay(1000);
-    //digitalWrite(buzzer, LOW);
+    //digitalWrite(buzzerPin, LOW);
     turnOFFLed();
     lastUpdate = millis();
   //}
