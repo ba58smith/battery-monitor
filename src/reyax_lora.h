@@ -1,5 +1,5 @@
 #ifndef _REYAX_LORA_H_
-#define _REYAX_LORA_H
+#define _REYAX_LORA_H_
 
 #include "Arduino.h"
 
@@ -36,9 +36,10 @@ public:
     }
 
     /**
-     * @brief - read_reply() - if delay_ms is > 0, does a delay(delay_ms), then reads the reply from an
-     * AT command that was just sent, then displays it on Serial. Some of the AT commands seem to need
-     * the delay before reading the reply. (AT+SEND is one of them.)
+     * @brief - read_reply() - if delay_ms is > 0, does a delay(delay_ms), then reads whatever is in the
+     * Serial2 buffer (typically, it's a reply from an AT command that was just sent), then displays
+     * it on Serial. Some of the AT commands seem to need the delay before reading the reply.
+     * (AT+SEND is one of them.)
      */
 
     void read_reply(int delay_ms = 0) {
