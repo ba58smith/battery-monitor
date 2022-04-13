@@ -1,15 +1,36 @@
-// Network must be the same (2) for all of my units to communicate w/ each other.
-// After re-writing the receiver code, this will change to some other unique identifier.
-#define LORA_NETWORK_ID 2
+#ifndef _CONFIG_H_
+#define _CONFIG_H_
+
+// Network must be the same (14) for all of my units to communicate w/ each other.
+#define LORA_NETWORK_ID 14
 
 // Set the LoRa address of this ESP32 (the receiver)
+// BAS: used only if the receiver starts to also start transmitting data
 #define LORA_BASE_STATION_ADDRESS 10
 
-// Un-comment any setting below you want to change
-// #define LORA_FREQUENCY 915000000  // default 915000000
+// Define the range of the transmitter addresses that are valid for our project.
+// Any packet received from a transmitter whose address is outside this range will be ignored.
+// Addresses can be 0 to 65535
+#define ADDRESS_RANGE_LOWER 49000
+#define ADDRESS_RANGE_UPPER 49020
+
+// Un-comment and change the baud rate below to change it.
 // #define LORA_BAUD_RATE 115200     // default 115200
-// #define LORA_OUTPUT_POWER 15      // default 15
-// #define LORA_SPREAD_FACTOR 12     // default 12
-// #define LORA_BANDWIDTH 7          // default 7
-// #define LORA_CODING_RATE 1        // default 1
-// #define LORA_PREAMBLE 4           // default 4
+
+// Put your wifi credentials here
+const char *SSID = "KeyAlmostWest";
+const char *PASSWORD = "sfaesfae";
+
+#define WEB_UPDATE_ALARM_AGE 3600000 // 1 hour
+
+// BME280 alarm ranges
+#define TEMP_ALARM_RANGE_LOWER 72
+#define TEMP_ALARM_RANGE_UPPER 82
+#define PRESSURE_ALARM_RANGE_LOWER 930
+#define PRESSURE_ALARM_RANGE_UPPER 1020
+#define HUMIDITY_ALARM_RANGE_LOWER 30
+#define HUMIDITY_ALARM_RANGE_UPPER 60
+
+#define buzzerPin 4
+
+#endif // _CONFIG_H_

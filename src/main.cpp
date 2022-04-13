@@ -5,29 +5,43 @@
 #include "config.h"
 #include "functions.h"
 #include "reyax_lora.h"
+#include "ui.h"
+#include "packet_list.h"
+#include "elapsedMillis.h"
 
-// If you change the NETWORK_ID (below) or NODE_ADDRESS (in config.h):
-// Un-comment "#define LORA_SETUP_REQUIRED", upload and run once, then comment out "#define LORA_SETUP_REQUIRED".
-// That will prevent writing the NETWORK_ID and NODE_ADDRESS to EEPROM every run.
-#define LORA_SETUP_REQUIRED
+// If you change the NETWORK_ID or BASE_STATION_ADDRESS (in config.h):
+// Un-comment "#define LORA_SETUP_REQUIRED", upload and run once, then
+// comment out "#define LORA_SETUP_REQUIRED".
+// That will prevent writing the NETWORK_ID and BASE_STATION_ADDRESS to EEPROM every run.
+// #define LORA_SETUP_REQUIRED
+ 
+uint64_t loop_delay = 500;
+uint64_t web_update_delay = 600000; // delay 10 minutes
+uint64_t bme280_update_delay = 600000; // every 10 minutes
+uint64_t packet_display_interval = 5000; // every 5 seconds
+uint64_t last_web_update = millis(); // to avoid an alarm until the first one is sent
 
-unsigned long lastWebUpdate = 0; 
-unsigned long mainLoopDelay = 500;
-unsigned long mainLoopCycle=0;
-bool firstTime = true;
-unsigned long webUpdateDelay = 600000; // delay 10 minutes
+elapsedMillis loop_timer;
+elapsedMillis web_update_timer;
+elapsedMillis bme280_timer;
+elapsedMillis packet_display_timer;
 
 ReyaxLoRa lora(LORA_NETWORK_ID, LORA_BASE_STATION_ADDRESS);
 
+auto* ui = new UI();
+
+auto* packet_list = new PacketList();
+
 void setup() {
-  
   // For Serial Monitor display of debug messages
   Serial.begin(115200);
+  // Wait for the serial connection
+  while (!Serial);
 
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(blueLED, OUTPUT);
   pinMode(buzzerPin, OUTPUT);
   digitalWrite(buzzerPin, LOW);
-  pinMode(blueLED,OUTPUT);
 
   lora.initialize();
 
@@ -35,60 +49,54 @@ void setup() {
   lora.one_time_setup();
 #endif
 
-  // Use the appropriate "set" method(s) here to change most of
-  // the LoRa parameters if desired.
+  // Add the appropriate "set" method(s) here to change most of
+  // the LoRa parameters, if desired.
+  // EXAMPLE: lora.set_output_power(10);
 
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
-    Serial.println(F("SSD1306 allocation failed"));
-    while (1); // Don't proceed, loop forever
-  }
-  
-  if (!bme.begin(0x76)) {
-    Serial.println("Could not find a valid BME280 sensor, check wiring!");
-    while (1); // Don't proceed, loop forever
-  }
-  
-  display.clearDisplay();
-  display.display();
-  delay(2000);
+  ui->prepare_display();
 
-  // Draw a single pixel in white (dont recall why i need this, but when i took it out it broke)
-  display.setTextSize(1);
-  display.drawPixel(0, 0, SSD1306_WHITE);
-  display.setTextColor(SSD1306_WHITE);
-
+  /* BAS: why do this in setup? TransmitToWeb checks wifi status every time and connects if necessary
   // Connect to wifi
-  display.setCursor(0,0);
-  display.print(F("Connecting to: "));
-  display.setCursor(0,20);
-  display.setTextSize(2);
-  display.println(F(SSID));
-  display.display();
-  display.setTextSize(1);
-  connectToWifi();
+  ui->before_connect_to_wifi_screen();
+  connectToWifi(); //BAS: replace this with AdafruitIO::connect(). I need to call that command at some point,
+  // and the first thing it does is disconnect from wifi, then re-connect.
+  ui->after_connect_to_wifi_screen(WiFi.localIP().toString());
+  */
 
-  
+  packet_list->make_fake_packets(); // BAS: remove this when you have real data coming from transmitters
+
 } // setup()
 
+void loop() {
+  
+  if (loop_timer > loop_delay) { // won't do anything until it runs the first time for loop_delay ms - that's OK.  
+    bool new_data_received = false;
+    
+    // check for new data on Serial2
+    new_data_received = packet_list->get_new_packets();
 
-void loop()
-{
-  currentTime = millis();
-  if (currentTime > mainLoopDelay + mainLoopCycle || firstTime == true)
-  {
-    mainLoopCycle = currentTime;
-    firstTime = false;
-    checkformessages();
-    if (currentTime > lastWebUpdate + webUpdateDelay)
-    {
-      transmitToWeb(lastWebUpdate);
-      lastWebUpdate = currentTime;
+    // read current bme280 data and display it
+    // BAS: modify this to add the new bme280 data to packet_list, and remove show_bme280_on_top_line()
+    if (bme280_timer > bme280_update_delay) {
+      packet_list->update_BME280_packets();
+      bme280_timer = 0;
     }
-    getEnvironmental();
-    if (WiFi.status() != WL_CONNECTED)
-    {
-      connectToWifi();
+
+    new_data_received = true; // BAS: for testing only - delete when actual data is coming from transmitters
+    if (new_data_received && web_update_timer > web_update_delay) {
+      if (transmitToWeb()) {
+        last_web_update = millis();
+        packet_list->update_web_update_packet(last_web_update);
+      }
+      web_update_timer = 0;
     }
+
+    if (packet_display_timer > packet_display_interval) {
+      ui->display_one_packet(packet_list->advance_one_packet());
+      packet_display_timer = 0;
+    }
+    
+    loop_timer = 0;
   }
 } // loop()
 
