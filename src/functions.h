@@ -24,6 +24,7 @@ void connectToWifi() {
      delay(500);
      attempts++;
    }
+   Serial.println("");
 }
 
 // BAS: if I start sending data to Arduino IO, this will go away.

@@ -23,6 +23,7 @@ public:
      */
 
     void initialize() {
+        Serial.println("lora::initialize()");
         if (pin_) {
             pinMode(pin_, OUTPUT);
             // Turn on the LoRa radio via transistor
@@ -52,6 +53,7 @@ public:
      */
 
     void one_time_setup() {
+        Serial.println("lora::one_time_setup()");
         uint8_t id = LORA_NETWORK_ID;
         String network_string = "AT+NETWORKID=" + String(id);
         send_and_read_reply(network_string);

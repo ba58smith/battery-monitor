@@ -50,14 +50,14 @@ public:
         parse_alarm_code(alarm_code);
         // now that we have the alarm counts, sound the alarm(s)
         // first, the short beeps
-        soundAlarm(100, first_alarm_count);
+        soundAlarm(50, first_alarm_count);
         // then the long beeps, if there are any
         if (second_alarm_count) {
-            soundAlarm(300, second_alarm_count);
+            soundAlarm(200, second_alarm_count);
         }
         // finally, the last set of short beeps, if there are any
         if (third_alarm_count) {
-            soundAlarm(100, third_alarm_count);
+            soundAlarm(50, third_alarm_count);
         }
     }
 

@@ -21,11 +21,15 @@
 #define blueLED 26
 
 void turnOnLed() {
+    pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(blueLED, OUTPUT);
     digitalWrite(LED_BUILTIN, HIGH); // turn the LED on
     digitalWrite(blueLED, HIGH);
 }
 
 void turnOFFLed() {
+    pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(blueLED, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW); // turn the LED on
     digitalWrite(blueLED, LOW);
 }
@@ -42,24 +46,26 @@ void turnOFFLed() {
 class UI {
 
 private:
-    Adafruit_SSD1306* display_;
+    Adafruit_SSD1306* display_ = NULL;
     Alarm* alarm_;
 
 public:
     
     UI() {
-        Adafruit_SSD1306* display_ = new Adafruit_SSD1306(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+        display_ = new Adafruit_SSD1306(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
         alarm_ = new Alarm(buzzerPin);
-        if (!display_->begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
-            Serial.println("SSD1306 allocation failed");
-        }
     }
 
     void prepare_display() {
+        if (display_->begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
+            Serial.println("OLED successfully started");
+        }
+        else {
+            Serial.println("SSD1306 allocation failed");
+        }
         display_->clearDisplay();
-        display_->display();
-        delay(2000);
-
+        display_->setCursor(0,0);
+        delay(2000); //BAS: is a delay necessary at all?
         // Draw a single pixel in white (dont recall why i need this, but when i took it out it broke)
         // BAS: surely this can't be required?
         display_->setTextSize(1);
@@ -71,31 +77,31 @@ public:
      * @brief Updates the bottom 3 lines of the display to show everything about a single
      * datapoint.
      */
-    
-   // BAS: remove all the lines below that print static text instead of real data 
+     
    void display_one_packet(Packet_t packet) {
-       display_->clearDisplay();
+       Serial.println("display_one_packet()::start to display " + packet.data_source + packet.data_name);
+       clear_packet_area();
        display_->setTextSize(1);
        display_->setCursor(0, line1);
-       //display_->print(packet.data_source);
-       display_->print("Bessie");
-       display_->print(": ");
-       //display_->println(packet.data_name);
-       display_->println("Voltage");
+       display_->print(packet.data_source);
+       display_->print("-");
+       display_->println(packet.data_name);
        display_->setCursor(0, line2);
-       //display_->print(packet.data_value);
-       display_->print("15.99");
-       display_->print(" Age: ");
+       display_->print(packet.data_value);
+       display_->print(" Age ");
        // BAS: make this display more than just seconds if there's room
-       //display_->println((millis() - packet.timestamp) / 1000);
-       display_->println("1234");
+       display_->print((millis() - packet.timestamp) / 1000);
+       if (packet.alarm_code) {
+           display_->print(" Alarm ");
+           display_->print(packet.alarm_code);
+       }
        display_->setCursor(0, line3);
-       display_->print("RSSI/SNR: ");
-       //display_->print(packet.RSSI);
-       display_->print("-99");
-       display_->print("/");
-       //display_->print(packet.SNR);
-       display_->print("88");
+       if (packet.RSSI != 0) { // this is a packet from a transmitter
+           display_->print("RSSI/SNR: ");
+           display_->print(packet.RSSI);
+           display_->print("/");
+           display_->print(packet.SNR);
+       }
        display_->display();
        if (packet.alarm_code && !packet.alarm_has_sounded) {
            alarm_->sound_alarm(packet.alarm_code);
@@ -103,78 +109,73 @@ public:
        }
    }
 
+   
+   /**
+    * @brief Updates the yellow status line (the top line of the OLED)
+    * 
+    * @param status_str - The string you want to display there - max is 21, I think (BAS?)
+    * @param duration_seconds - # of seconds to display this string before the next update 
+    * of the status line. If not specified, it's 1 second. If you want this string to stay
+    * on the screen until the next explicit update, use 0.
+    */
+
+   void update_status_line(String status_str, uint16_t duration_seconds = 1) {
+       clear_status_line();
+       display_->print(status_str);
+       display_->display();
+       if (duration_seconds) {
+           delay(duration_seconds * 1000);
+       }
+   }
+
     /**
-     * @brief does with the OLED what used to be just before ConnecToWifi() in the old program
+     * @brief Display the status just before connecting to wifi.
      */
     void before_connect_to_wifi_screen() {
-        display_->setCursor(0,0);
-        display_->print(F("Connecting to: "));
-        display_->setCursor(0, 20);
-        display_->setTextSize(1);
-        display_->println(F(SSID));
-        display_->display();
-        display_->setTextSize(1);
+        update_status_line("Connecting to:");
+        update_status_line(SSID);
     }
 
     /**
-     * @brief - does with the OLED what used to be just after ConnectToWifi()
+     * @brief Display the status just after connecting to wifi.
      */
     void after_connect_to_wifi_screen(String local_ip) {
-        display_->clearDisplay();
-        display_->setCursor(0, 0);
-        display_->println(F("Connected to"));
-        display_->setCursor(0, 30);
-        display_->setTextSize(1);
-        display_->println(local_ip);
-        display_->display();
-        delay(5000);
-        display_->setTextSize(1);
-        display_->clearDisplay();
-        display_->setCursor(0, 0);
-        display_->println(F("Awaiting data"));
-        display_->display();
+        update_status_line("Connected to:");
+        update_status_line(local_ip, 3);
+        update_status_line("Waiting for data", 0);
     }
 
-    void clear_top_line() {
-        // clears the info message at TOP of OLED
-        // BAS: I think this should be done with display.drawFastHLine(0, 15, 15), then display.display().
-            /*
-            for (int y = 0; y <= 15; y++) {
-                for (int x = 0; x < 127; x++) {
-                    display_->drawPixel(x, y, BLACK);
-                }
-            }
-            */
-            display_->drawFastHLine(0, 15, 15, SSD1306_BLACK);
-            display_->display();
-    }
     
-
-    // if there is data, this function is called
-    // BAS: this will be replaced by the concept of a separate display page for each
-    // item of data we receive.
-    // updateOLED(line1, Bes1, battery1)
-    void updateOLED(int start_line, String transmitter, String voltage, String RSSI) {
-        //Serial.println("battery 1");
-        display_->setTextSize(1);
-        //display.drawPixel(0, line1, SSD1306_WHITE);
-        for (int y = start_line; y <= start_line + 6; y++) {
+    /**
+     * @brief Clears the top yellow line of the OLED and prepares it for the next text
+     * to display there.
+     */
+    
+    void clear_status_line() {
+        display_->setCursor(0, 0);
+        // This is how Jim did it:
+        for (int y = 0; y <= 15; y++) {
             for (int x = 0; x < 127; x++) {
                 display_->drawPixel(x, y, BLACK);
             }
         }
-        display_->setCursor(0, start_line);
-        // display.println(F("Bes1"));
-        display_->println(transmitter);
-        display_->setCursor(30, start_line);
-        display_->println(voltage);
-        display_->setCursor(65, start_line);
-        display_->println(F("RSSI: "));
-        display_->setCursor(95, start_line);
-        display_->println(RSSI);
+        // BAS: drawFastHLine causes a crash   
+        //display_->drawFastHLine(0, 15, 15, SSD1306_BLACK);
+        display_->setCursor(0, 0);
         display_->display();
-    } 
+    }
 
+    void clear_packet_area() {
+        for (int y = line1; y <= SCREEN_HEIGHT; y++) {
+            for (int x = 0; x < SCREEN_WIDTH; x++) {
+                display_->drawPixel(x, y, BLACK);
+            }
+        }
+        // BAS: this crashes the system
+        // display_->drawFastHLine(line1, 63, 48, SSD1306_BLACK);
+        display_->display();
+    }
+    
 }; // class UI
 
 #endif // _UI_H_

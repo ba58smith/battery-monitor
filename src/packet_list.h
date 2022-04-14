@@ -24,7 +24,7 @@ struct Packet_t {
         int8_t RSSI = 0;
         int8_t SNR = 0;
         uint32_t timestamp = 0;
-    };
+    };    
 
 /**
  * @brief PacketList is a class that manages all of the packets of data that are going to be
@@ -201,7 +201,9 @@ public:
 
    void add_packet_to_list(Packet_t* packet) {
        if (packets_.size() == 0) { // the list is empty
+           Serial.println("Adding packet: " + packet->data_source + " " + packet->data_name);
            packets_.push_back(*packet); // add it to the list
+           Serial.println("New packet count: " + packets_.size());
        }
        else {
            bool message_found = false;
@@ -221,7 +223,10 @@ public:
                }
            }
            if (!message_found) { // it's not already in the list
+               Serial.println("Adding packet: " + packet->data_source + " " + packet->data_name);
                packets_.push_back(*packet); // add it to the list
+               Serial.print("New packet count: ");
+               Serial.println(packets_.size());
            }
        }
    }
@@ -232,8 +237,10 @@ public:
     */
 
    void update_BME280_packets() {
+       Serial.println("Updating BME280 data");
        int16_t alarm = 0;
-       float data = (bme280_->readTemperature() * 1.8) + 32;;
+       float data = (bme280_->readTemperature() * 1.8) + 32;
+       Serial.println("temperature: " + String(data));
        if (data <= TEMP_ALARM_RANGE_LOWER || data >= TEMP_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
@@ -242,6 +249,7 @@ public:
        create_new_packet("BME280", "Temp (F)", (String)data, alarm);
        
        data = (bme280_->readPressure() / 100.0);
+       Serial.println("pressure: " + String(data));
        if (data <= PRESSURE_ALARM_RANGE_LOWER || data >= PRESSURE_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
@@ -250,12 +258,13 @@ public:
        create_new_packet("BME280", "Pressure (hPa)", (String)data, alarm);
 
        data = (bme280_->readHumidity());
+       Serial.println("humidity: " + String(data));
        if (data <= HUMIDITY_ALARM_RANGE_LOWER || data >= HUMIDITY_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
        // BAS: get rid of next line when you stop updating Jim's website
        yourHumidity = data;
-       create_new_packet("BME280", "Relative humidity", (String)data, alarm);
+       create_new_packet("BME280", "Humidity", (String)data, alarm);
    }
 
    /**
@@ -268,7 +277,7 @@ public:
        int16_t alarm = 0;
        String source = "Web";
        String name_of_data = "Last update";
-       String value = "12/12 23:59"; // BAS: this will be "convert millis() to a date string"
+       String value = "12/31 @ 23:59"; // BAS: try to display actual date and time
        if (millis() - last_successful_update > WEB_UPDATE_ALARM_AGE) {
            alarm = 333;
        }
@@ -287,7 +296,18 @@ public:
        else {
            loop_iterator_ = packets_.begin();
        }
+       Serial.print("advance_one_packet()::current packet is ");
+       // BAS: the crash happens when the next line is called
+       Serial.println(loop_iterator_->data_source + loop_iterator_->data_name);
        return *loop_iterator_;
+   }
+
+   
+   /**
+    * @brief Used in main.cpp to see if there are packets to display
+    */
+   uint8_t get_packet_list_size() {
+       return packets_.size();
    }
 
    /**
@@ -296,8 +316,7 @@ public:
 
    void make_fake_packets() { //String source, String name_of_data, String value, int16_t alarm
        create_new_packet("Truck", "Voltage", "12.60", 0);
-       create_new_packet("Killer", "Voltage", "12.00", 11);
-       create_new_packet("Pool", "Water temp", "80", 0);
+       create_new_packet("Killer", "Voltage", "12.00", 0);
    }
 
 }; // class PacketList

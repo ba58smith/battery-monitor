@@ -13,10 +13,10 @@
 // Un-comment "#define LORA_SETUP_REQUIRED", upload and run once, then
 // comment out "#define LORA_SETUP_REQUIRED".
 // That will prevent writing the NETWORK_ID and BASE_STATION_ADDRESS to EEPROM every run.
-// #define LORA_SETUP_REQUIRED
+//#define LORA_SETUP_REQUIRED
  
 uint64_t loop_delay = 500;
-uint64_t web_update_delay = 600000; // delay 10 minutes
+uint64_t web_update_delay = 600000;    // every 10 minutes (600000)
 uint64_t bme280_update_delay = 600000; // every 10 minutes
 uint64_t packet_display_interval = 5000; // every 5 seconds
 uint64_t last_web_update = millis(); // to avoid an alarm until the first one is sent
@@ -46,7 +46,7 @@ void setup() {
   lora->initialize();
 
 #ifdef LORA_SETUP_REQUIRED
-  lora.one_time_setup();
+  lora->one_time_setup();
 #endif
 
   // Add the appropriate "set" method(s) here to change most of
@@ -55,13 +55,11 @@ void setup() {
 
   ui->prepare_display();
 
-  /* BAS: why do this in setup? TransmitToWeb checks wifi status every time and connects if necessary
   // Connect to wifi
   ui->before_connect_to_wifi_screen();
   connectToWifi(); //BAS: replace this with AdafruitIO::connect(). I need to call that command at some point,
   // and the first thing it does is disconnect from wifi, then re-connect.
   ui->after_connect_to_wifi_screen(WiFi.localIP().toString());
-  */
 
   packet_list->make_fake_packets(); // BAS: remove this when you have real data coming from transmitters
 
@@ -92,8 +90,11 @@ void loop() {
     }
 
     if (packet_display_timer > packet_display_interval) {
-      ui->display_one_packet(packet_list->advance_one_packet());
-      packet_display_timer = 0;
+      if (packet_list->get_packet_list_size()) {
+        Packet_t active_packet = packet_list->advance_one_packet();
+        ui->display_one_packet(active_packet);
+        packet_display_timer = 0;
+      }
     }
     
     loop_timer = 0;
