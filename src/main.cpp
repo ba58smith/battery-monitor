@@ -26,7 +26,7 @@ elapsedMillis web_update_timer;
 elapsedMillis bme280_timer;
 elapsedMillis packet_display_timer;
 
-ReyaxLoRa lora(LORA_NETWORK_ID, LORA_BASE_STATION_ADDRESS);
+auto* lora = new ReyaxLoRa();
 
 auto* ui = new UI();
 
@@ -43,7 +43,7 @@ void setup() {
   pinMode(buzzerPin, OUTPUT);
   digitalWrite(buzzerPin, LOW);
 
-  lora.initialize();
+  lora->initialize();
 
 #ifdef LORA_SETUP_REQUIRED
   lora.one_time_setup();

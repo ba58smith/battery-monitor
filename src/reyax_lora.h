@@ -8,15 +8,12 @@ class ReyaxLoRa {
 
 public:
     // Constructor for the transmitter. pin is the "power pin" for the LoRa radio.
-    ReyaxLoRa(int8_t pin, int8_t network_id, uint16_t node_address, uint16_t base_station_address)
-        : pin_{pin}, network_id_{network_id}, node_address_{node_address},
-          base_station_address_{base_station_address}
+    ReyaxLoRa(uint8_t pin)
+        : pin_{pin}
     {}
 
     // Constructor for the receiver (no pin to turn it on/off - it's always powered on)
-    // BAS: this doesn't need the base_station_address unless I SEND a message
-    ReyaxLoRa(int8_t network_id, uint16_t base_station_address)
-        : network_id_{network_id}, base_station_address_{base_station_address} 
+    ReyaxLoRa()
     {}
 
     
@@ -43,6 +40,8 @@ public:
         // Wake up the LoRa and show the responses in the Serial Monitor
         send_and_read_reply("AT");
         send_and_read_reply("AT+VER?");
+        send_and_read_reply("AT+NETWORKID?");
+        send_and_read_reply("AT+ADDRESS?");
     }
 
 
@@ -55,12 +54,16 @@ public:
      */
 
     void one_time_setup() {
-        String network_string = "AT+NETWORKID=" + String(network_id_);
+        uint8_t id = LORA_NETWORK_ID;
+        String network_string = "AT+NETWORKID=" + String(id);
         send_and_read_reply(network_string);
-        String address_string = "AT+ADDRESS=" + String(node_address_);
+
+        uint16_t address = LORA_NODE_ADDRESS;
+        String address_string = "AT+ADDRESS=" + String(address);
         send_and_read_reply(address_string);
     #ifdef LORA_BAUD_RATE
-        String baud_rate_string = "AT+IPR=" + String(baud_rate_);
+        uint32_t baud = LORA_BAUD_RATE;
+        String baud_rate_string = "AT+IPR=" + String(baud);
         send_and_read_reply(baud_rate_string);
     #endif        
     }
@@ -132,38 +135,56 @@ public:
         Serial.println(Serial2.readStringUntil('\n'));
     }
 
+    /**
+     * @brief Sends an AT command to the LoRa, then reads the reply from the LoRa
+     * and displays it in the serial monitor.
+     * 
+     * @param send_string The AT command string you want to send to the LoRa
+     * @param delay_ms Delay between sending the AT command and trying to read the reply.
+     * See read_reply(), above.
+     */
+
     void send_and_read_reply(String send_string, int delay_ms = 0) {
-        String command = send_string + String("\r\n");
-        String sending = String("Sending: ") + command;
+        String command = send_string + "\r\n";
+        String sending = "Sending: " + command;
+        // Display it on the serial monitor
         Serial.println(sending);
+        // Now send it to the LoRa
         Serial2.print(command);
         read_reply(delay_ms);
     }
 
-    void send_data(float voltage) {
-        // 2 is Jim's network number, used by his code to "separate" my network from his.
-        // The correct command below should be "AT+SEND=10,5,<voltage>", and the receiver code
-        // needs to just drop the lines that deal with the so-called network ID.
+
+    #ifndef BASE_STATION
+    /**
+     * @brief Sends voltage data from a transmitter to the base station
+     * 
+     * @param voltage 
+     */
+    
+    void send_voltage_data(float voltage) {
         // String(voltage, 2); makes voltage always have two decimal places.
         String volt_str = String(voltage, 2);
-        // BAS: remove the "+ 2" after fixing the base station code to not expect the "network"
-        uint8_t data_length = volt_str.length() + 2;
-        String payload = "AT+SEND=" + String(base_station_address_) + "," 
+        uint16_t alarm_code = 0;
+        if (voltage < VOLTAGE_ALARM_RANGE_LOWER || voltage > VOLTAGE_ALARM_RANGE_UPPER) {
+            alarm_code = VOLTAGE_ALARM_CODE;
+        }
+        uint16_t address = BASE_STATION_ADDRESS;
+        String data_str = String(TRANSMITTER_NAME + "%Voltage%" + volt_str + "%" + alarm_code);
+        uint8_t data_length = data_str.length();
+        String payload = "AT+SEND=" + String(address) + ","
                          + String(data_length) + "," 
-                         + String(network_id_) + "," 
-                         + volt_str;
+                         + data_str;
         send_and_read_reply(payload, 500);
     }
+    #endif
 
     void turn_off() {
         digitalWrite(pin_, LOW);
     }
 
 private:
-    int8_t pin_ = 0;
-    int8_t network_id_ = 16;
-    uint16_t node_address_ = 65535;
-    uint16_t base_station_address_ = 65535;
+    uint8_t pin_ = 0;
     // All variables below are set to the factory defaults.
     // Change any of them with the appropriate "set" method.
     int64_t frequency_ = 915000000;
