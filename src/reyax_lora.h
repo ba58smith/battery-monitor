@@ -5,7 +5,6 @@
 #include "config.h"
 
 class ReyaxLoRa {
-
 public:
     // Constructor for the transmitter. pin is the "power pin" for the LoRa radio.
     ReyaxLoRa(uint8_t pin)
@@ -16,7 +15,6 @@ public:
     ReyaxLoRa()
     {}
 
-    
     /**
      * @brief - initialize() sends power to the LoRa radio if pin_ has been set
      * to something other than 0 in the constructor (which should be done ONLY
@@ -44,7 +42,7 @@ public:
         send_and_read_reply("AT+ADDRESS?");
     }
 
-
+    
     /**
      * @brief - one_time_setup() writes the network ID, this ESP32's address,
      * and the baud rate (if not the default) to EEPROM. It should be called
@@ -123,7 +121,7 @@ public:
     }
 
     /**
-     * @brief - read_reply() - if delay_ms is > 0, does a delay(delay_ms), then reads whatever is in the
+     * @brief - If delay_ms is > 0, does a delay(delay_ms), then reads whatever is in the
      * Serial2 buffer (typically, it's a reply from an AT command that was just sent), then displays
      * it on Serial. Some of the AT commands seem to need the delay before reading the reply.
      * (AT+SEND is one of them.)
@@ -135,6 +133,7 @@ public:
         Serial.println(Serial2.readStringUntil('\n'));
     }
 
+    
     /**
      * @brief Sends an AT command to the LoRa, then reads the reply from the LoRa
      * and displays it in the serial monitor.
@@ -154,14 +153,13 @@ public:
         read_reply(delay_ms);
     }
 
-
     #ifndef BASE_STATION
-    /**
+     /**
      * @brief Sends voltage data from a transmitter to the base station
      * 
      * @param voltage 
      */
-    
+
     void send_voltage_data(float voltage) {
         // String(voltage, 2); makes voltage always have two decimal places.
         String volt_str = String(voltage, 2);
@@ -169,7 +167,7 @@ public:
         if (voltage < VOLTAGE_ALARM_RANGE_LOWER || voltage > VOLTAGE_ALARM_RANGE_UPPER) {
             alarm_code = VOLTAGE_ALARM_CODE;
         }
-        uint16_t address = BASE_STATION_ADDRESS;
+        uint16_t address = LORA_BASE_STATION_ADDRESS;
         String data_str = String(TRANSMITTER_NAME + "%Voltage%" + volt_str + "%" + alarm_code);
         uint8_t data_length = data_str.length();
         String payload = "AT+SEND=" + String(address) + ","
