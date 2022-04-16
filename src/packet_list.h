@@ -179,7 +179,7 @@ public:
 
    
    /**
-    * @brief Create a new packet with data from any source, then call add_packet_to_list().
+    * @brief Create a new "generic" packet with data from any source, then call add_packet_to_list().
     * 
     * @param source - "Truck" or "Boat" or "Pool", etc.
     * @param name_of_data  "Voltage", "Water temp", etc.
@@ -187,7 +187,7 @@ public:
     * @param alarm Alarm code
     */
 
-   void create_new_packet(String source, String name_of_data, String value, int16_t alarm) {
+   void create_generic_packet(String source, String name_of_data, String value, int16_t alarm) {
        Packet_t new_packet;
        new_packet.unique_id = source + name_of_data;
        new_packet.data_source = source;
@@ -263,7 +263,7 @@ public:
        }
        // BAS: get rid of next line when you stop updating Jim's website
        yourTemp = data;
-       create_new_packet("BME280", "Temp (F)", (String)data, alarm);
+       create_generic_packet("BME280", "Temp (F)", (String)data, alarm);
        
        data = (bme280_->readPressure() / 100.0);
        Serial.println("pressure: " + String(data));
@@ -272,7 +272,7 @@ public:
        }
        // BAS: get rid of next line when you stop updating Jim's website
        yourPressure = data;
-       create_new_packet("BME280", "Pressure (hPa)", (String)data, alarm);
+       create_generic_packet("BME280", "Pressure (hPa)", (String)data, alarm);
 
        data = (bme280_->readHumidity());
        Serial.println("humidity: " + String(data));
@@ -281,7 +281,7 @@ public:
        }
        // BAS: get rid of next line when you stop updating Jim's website
        yourHumidity = data;
-       create_new_packet("BME280", "Humidity", (String)data, alarm);
+       create_generic_packet("BME280", "Humidity", (String)data, alarm);
    }
 
    /**
@@ -298,7 +298,7 @@ public:
        if (millis() - last_successful_update > WEB_UPDATE_ALARM_AGE) {
            alarm = 333;
        }
-       create_new_packet(source, name_of_data, value, alarm);
+       create_generic_packet(source, name_of_data, value, alarm);
    }
 
    /**
@@ -326,8 +326,8 @@ public:
     */
 
    void make_fake_packets() { //String source, String name_of_data, String value, int16_t alarm
-       create_new_packet("Truck", "Voltage", "12.60", 0);
-       create_new_packet("Killer", "Voltage", "12.00", 0);
+       create_generic_packet("Truck", "Voltage", "12.60", 0);
+       create_generic_packet("Killer", "Voltage", "12.00", 0);
    }
 
 }; // class PacketList

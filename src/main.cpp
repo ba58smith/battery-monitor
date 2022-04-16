@@ -67,11 +67,10 @@ void setup() {
 
 void loop() {
   
-  if (loop_timer > loop_delay) { // won't do anything until it runs the first time for loop_delay ms - that's OK.  
-    bool new_data_received = false;
+  if (loop_timer > loop_delay) { // won't do anything until it runs the first time for loop_delay ms - that's OK.
     
     // check for new data on Serial2
-    new_data_received = packet_list->get_new_packets();
+    packet_list->get_new_packets();
 
     // read current bme280 data and display it
     // BAS: modify this to add the new bme280 data to packet_list, and remove show_bme280_on_top_line()
@@ -81,7 +80,7 @@ void loop() {
     }
 
     //new_data_received = true; // BAS: for testing only - delete when actual data is coming from transmitters
-    if (new_data_received && web_update_timer > web_update_delay) {
+    if (web_update_timer > web_update_delay) {
       if (transmitToWeb()) {
         last_web_update = millis();
         packet_list->update_web_update_packet(last_web_update);

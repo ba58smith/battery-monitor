@@ -118,7 +118,7 @@ public:
     * on the screen until the next explicit update, use 0.
     */
 
-   void update_status_line(String status_str, uint16_t duration_seconds = 1) {
+   void update_status_line(String status_str, uint8_t duration_seconds = 1) {
        clear_status_line();
        display_->print(status_str);
        display_->display();
