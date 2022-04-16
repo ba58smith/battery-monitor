@@ -50,14 +50,14 @@ public:
         parse_alarm_code(alarm_code);
         // now that we have the alarm counts, sound the alarm(s)
         // first, the short beeps
-        soundAlarm(50, first_alarm_count);
+        soundAlarm(20, first_alarm_count);
         // then the long beeps, if there are any
         if (second_alarm_count) {
-            soundAlarm(200, second_alarm_count);
+            soundAlarm(150, second_alarm_count);
         }
         // finally, the last set of short beeps, if there are any
         if (third_alarm_count) {
-            soundAlarm(50, third_alarm_count);
+            soundAlarm(20, third_alarm_count);
         }
     }
 
@@ -71,7 +71,7 @@ public:
             digitalWrite(pin_, HIGH);
             delay(alarm_length);
             digitalWrite(pin_, LOW);
-            delay(300);
+            delay(400);
         }
         digitalWrite(pin_, LOW);
     }

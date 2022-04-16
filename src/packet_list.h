@@ -71,9 +71,11 @@ public:
            // BAS: Add code here to display "Receiving data" on the top line of display
            // If there are two packets in the Serial2 buffer, make sure the second one
            // starts at the right place. If it doesn't find a "+", it won't find a valid packet.
-           Serial2.readStringUntil('+');
+           String init_str = Serial2.readStringUntil('+');
+           Serial.println("New packet coming in");
            // see if the next 4 characters == "RCV="
-           if (Serial2.readStringUntil(',') == "RCV=") {
+           if (Serial2.readStringUntil('=') == "RCV") {
+               Serial.println("New packet received");
                initialize_packet(&new_packet);
                // make sure this is from one of OUR transmitters:
                new_packet.transmitter_address = Serial2.readStringUntil(',').toInt();
@@ -179,7 +181,10 @@ public:
    /**
     * @brief Create a new packet with data from any source, then call add_packet_to_list().
     * 
-    * @param id A unique identifier for this description
+    * @param source - "Truck" or "Boat" or "Pool", etc.
+    * @param name_of_data  "Voltage", "Water temp", etc.
+    * @param value Obvious
+    * @param alarm Alarm code
     */
 
    void create_new_packet(String source, String name_of_data, String value, int16_t alarm) {
@@ -200,10 +205,11 @@ public:
     */
 
    void add_packet_to_list(Packet_t* packet) {
-       if (packets_.size() == 0) { // the list is empty
+       if (packets_.empty()) {
            Serial.println("Adding packet: " + packet->data_source + " " + packet->data_name);
            packets_.push_back(*packet); // add it to the list
-           Serial.println("New packet count: " + packets_.size());
+           uint8_t list_size = packets_.size();
+           Serial.println("New packet count: " + String(list_size));
        }
        else {
            bool message_found = false;
@@ -225,10 +231,21 @@ public:
            if (!message_found) { // it's not already in the list
                Serial.println("Adding packet: " + packet->data_source + " " + packet->data_name);
                packets_.push_back(*packet); // add it to the list
-               Serial.print("New packet count: ");
-               Serial.println(packets_.size());
+               uint8_t list_size = packets_.size();
+               Serial.println("New packet count: " + String(list_size));
            }
        }
+   }
+
+   
+   /**
+    * @brief Update the alarm_has_sounded member of Packet_t, so that it can be done
+    * from the UI.
+    * BAS: is this necessary? Can I modify the packet that's sent to print, back in packets?
+    */
+
+   void set_alarm_sounded(String id) {
+       //Start an iterator, find the unique_id, update the field
    }
 
    
@@ -277,7 +294,7 @@ public:
        int16_t alarm = 0;
        String source = "Web";
        String name_of_data = "Last update";
-       String value = "12/31 @ 23:59"; // BAS: try to display actual date and time
+       String value = "12/31 @ 23:59"; // BAS: try to display actual date and time (TWatchSK gui.cpp line 801)
        if (millis() - last_successful_update > WEB_UPDATE_ALARM_AGE) {
            alarm = 333;
        }
@@ -290,16 +307,10 @@ public:
     */
 
    Packet_t advance_one_packet() {
-       if (loop_iterator_ != packets_.end()) {
-           loop_iterator_++;
-       }
-       else {
+       if (loop_iterator_ == packets_.end()) {
            loop_iterator_ = packets_.begin();
        }
-       Serial.print("advance_one_packet()::current packet is ");
-       // BAS: the crash happens when the next line is called
-       Serial.println(loop_iterator_->data_source + loop_iterator_->data_name);
-       return *loop_iterator_;
+       return *loop_iterator_++;
    }
 
    

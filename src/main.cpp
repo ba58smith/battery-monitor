@@ -61,7 +61,7 @@ void setup() {
   // and the first thing it does is disconnect from wifi, then re-connect.
   ui->after_connect_to_wifi_screen(WiFi.localIP().toString());
 
-  packet_list->make_fake_packets(); // BAS: remove this when you have real data coming from transmitters
+  //packet_list->make_fake_packets(); // BAS: remove this when you have real data coming from transmitters
 
 } // setup()
 
@@ -80,7 +80,7 @@ void loop() {
       bme280_timer = 0;
     }
 
-    new_data_received = true; // BAS: for testing only - delete when actual data is coming from transmitters
+    //new_data_received = true; // BAS: for testing only - delete when actual data is coming from transmitters
     if (new_data_received && web_update_timer > web_update_delay) {
       if (transmitToWeb()) {
         last_web_update = millis();
@@ -90,9 +90,9 @@ void loop() {
     }
 
     if (packet_display_timer > packet_display_interval) {
-      if (packet_list->get_packet_list_size()) {
-        Packet_t active_packet = packet_list->advance_one_packet();
-        ui->display_one_packet(active_packet);
+      uint8_t list_size = packet_list->get_packet_list_size();
+      if (list_size) { // there are packets
+        ui->display_one_packet(packet_list->advance_one_packet());
         packet_display_timer = 0;
       }
     }

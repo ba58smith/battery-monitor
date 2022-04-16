@@ -79,7 +79,6 @@ public:
      */
      
    void display_one_packet(Packet_t packet) {
-       Serial.println("display_one_packet()::start to display " + packet.data_source + packet.data_name);
        clear_packet_area();
        display_->setTextSize(1);
        display_->setCursor(0, line1);
@@ -89,7 +88,7 @@ public:
        display_->setCursor(0, line2);
        display_->print(packet.data_value);
        display_->print(" Age ");
-       // BAS: make this display more than just seconds if there's room
+       // BAS: make this display more than just seconds - see TWatchSK's "uptime"
        display_->print((millis() - packet.timestamp) / 1000);
        if (packet.alarm_code) {
            display_->print(" Alarm ");
