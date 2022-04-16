@@ -73,13 +73,11 @@ void loop() {
     packet_list->get_new_packets();
 
     // read current bme280 data and display it
-    // BAS: modify this to add the new bme280 data to packet_list, and remove show_bme280_on_top_line()
     if (bme280_timer > bme280_update_delay) {
       packet_list->update_BME280_packets();
       bme280_timer = 0;
     }
 
-    //new_data_received = true; // BAS: for testing only - delete when actual data is coming from transmitters
     if (web_update_timer > web_update_delay) {
       if (transmitToWeb()) {
         last_web_update = millis();
@@ -90,7 +88,7 @@ void loop() {
 
     if (packet_display_timer > packet_display_interval) {
       uint8_t list_size = packet_list->get_packet_list_size();
-      if (list_size) { // there are packets
+      if (list_size) { // there are packets to display
         ui->display_one_packet(packet_list->advance_one_packet());
         packet_display_timer = 0;
       }
