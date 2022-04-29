@@ -70,7 +70,6 @@ bool transmitToWeb(){
         success = true;
       }else {
         Serial.print("Error code: ");
-        // BAS: display.setCursor(0, 5);
         Serial.println(httpResponseCode);
       }
      

@@ -67,13 +67,10 @@ public:
         }
         display_->clearDisplay();
         display_->setCursor(0,0);
-        delay(500); //BAS: is a delay necessary at all?
-        // Draw a single pixel in white (dont recall why i need this, but when i took it out it broke)
-        // BAS: surely this can't be required? BUT IT IS!
+        // If you don't do these next two lines, there is no display at all for some reason
         display_->drawPixel(0, 0, SSD1306_WHITE);
         display_->setTextColor(SSD1306_WHITE);
         display_about_screen();
-        display_->setTextSize(1);
     }
 
     /**
@@ -133,7 +130,7 @@ public:
    /**
     * @brief Updates the yellow status line (the top line of the OLED)
     * 
-    * @param status_str - The string you want to display there - max is 21, I think (BAS?)
+    * @param status_str - The string you want to display there - max is about 21.
     * @param duration_seconds - # of seconds to display this string before the next update 
     * of the status line. If not specified, it's 1 second. If you want this string to stay
     * on the screen until the next explicit update, use 0.
@@ -186,8 +183,8 @@ public:
                 display_->drawPixel(x, y, BLACK);
             }
         }
-        // BAS: drawFastHLine causes a crash   
-        //display_->drawFastHLine(0, 15, 15, SSD1306_BLACK);
+        // drawFastHLine causes a crash   
+        // display_->drawFastHLine(0, 15, 15, SSD1306_BLACK);
         display_->setCursor(0, 0);
         display_->display();
     }
@@ -198,9 +195,18 @@ public:
                 display_->drawPixel(x, y, BLACK);
             }
         }
-        // BAS: this crashes the system
+        // this crashes the system
         // display_->drawFastHLine(line1, 63, 48, SSD1306_BLACK);
         display_->display();
+    }
+
+    /**
+     * @brief Make a very brief "beep" to alert of something about to happen,
+     * like a new packet being processed.
+     */
+
+    void beep(uint8_t duration = 5) {
+        alarm_->soundAlarm(duration, 1);
     }
     
 }; // class UI

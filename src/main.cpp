@@ -66,8 +66,6 @@ void setup() {
   // and the first thing it does is disconnect from wifi, then re-connect.
   ui->after_connect_to_wifi_screen(WiFi.localIP().toString());
 
-  //packet_list->make_fake_packets(); // BAS: remove this when you have real data coming from transmitters
-
 } // setup()
 
 void loop() {
@@ -92,7 +90,6 @@ void loop() {
     }
 
     if (packet_display_timer > packet_display_interval) {
-      // BAS: I think there is a faster way to determine if the list is not empty - don't have to get the list size
       uint8_t list_size = packet_list->get_packet_list_size();
       if (list_size) { // there are packets to display
         ui->display_one_packet(packet_list->advance_one_packet());
