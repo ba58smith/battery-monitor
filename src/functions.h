@@ -56,18 +56,15 @@ bool transmitToWeb(){
       + "&humidity=" + String(yourHumidity)
       + "&pressure=" + String(yourPressure, 2);
 
-      //Serial.println(serverPath);
       // Your Domain name with URL path or IP address with path
       http.begin(serverPath.c_str());
       
       // Send HTTP GET request
-     //Serial.println("Upating the web");
         int httpResponseCode = http.GET();
       
       if (httpResponseCode>0) {
         Serial.print("HTTP Response code: ");
         Serial.println(httpResponseCode);
-        //String payload = http.getString();
         Serial.println(http.getString());
         success = true;
       }else {

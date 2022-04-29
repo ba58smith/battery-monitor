@@ -62,7 +62,8 @@ public:
 
    
    /**
-    * @brief Populate a new Packet_t from the data coming in through Serial2.
+    * @brief Populate a new Packet_t from the data coming in through Serial2, then add it
+    * to, or update it in, the list of packets.
     */
 
    bool get_new_packets() {
@@ -76,7 +77,7 @@ public:
            String init_str = Serial2.readStringUntil('+');
            // BAS: remove this after all testing
            ui_->beep();
-           delay(2000); // give me time to start filming :-)
+           delay(2000); // BAS: give me time to start filming :-)
            Serial.println("New data coming in");
            ui_->update_status_line("New data coming in", 2);
            // see if the next 4 characters == "RCV="
@@ -115,9 +116,7 @@ public:
                        Serial.println("Error reading data_name from Serial2.");
                        return false;
                    }
-                   new_packet.data_value = Serial2.readStringUntil('%'); // Keep it as a String for now, even though it's
-                                                              // probably a number. Convert it to a number before
-                                                              // sending to Adafruit IO if necessary.
+                   new_packet.data_value = Serial2.readStringUntil('%');
                    Serial.println("Data value = " + new_packet.data_value);
                    if (new_packet.data_value.length() == 0) {
                        Serial.println("Error reading data_value from Serial2.");
@@ -169,8 +168,6 @@ public:
                    else if (new_packet.data_source == "Boat") {
                        battery3 = new_packet.data_value.toFloat();
                    }
-                                      
-                   delay(1000); // to keep the LED on for more than a few ms
                    turnOFFLed();
                }
            }
@@ -181,8 +178,7 @@ public:
        else {
            return "";
        }
-       
-   }
+    }
 
    
    /**

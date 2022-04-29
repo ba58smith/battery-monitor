@@ -14,7 +14,7 @@
 #define OLED_RESET 5
 
 // a quick way to adjust the vertical seperation between the 
-// text lines on the oled. So, below, line1 will start on y17, line2 on y32, etc.
+// text lines on the oled. So, below, line1 will start on y16, line2 on y29, etc.
 #define line1 16
 #define line2 29
 #define line3 42
@@ -30,8 +30,6 @@ void turnOnLed() {
 }
 
 void turnOFFLed() {
-    pinMode(LED_BUILTIN, OUTPUT);
-    pinMode(blueLED, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW); // turn the LED on
     digitalWrite(blueLED, LOW);
 }
@@ -41,7 +39,7 @@ void turnOFFLed() {
  *        It displays "status info" on the top (yellow) line, and cycles
  *        through all of the other data the receiver is getting from the
  *        transmitters. This class also controls the Alarm, which is used
- *        when a transmitter sends in data that is "out of range", but could
+ *        when any packet's data is "out of range", but could
  *        also be used to alert of something like no wifi, or a failed web update.
  */
 
@@ -134,7 +132,7 @@ public:
        display_->setCursor(0, line3);
        display_->print("28 Apr, 2020");
        display_->display();
-       update_status_line("J. Booth's", 5, 2);
+       update_status_line("JimBooth's", 5, 2);
    }
 
    
