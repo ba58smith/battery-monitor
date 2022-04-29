@@ -23,8 +23,8 @@ float battery3 = 12.33; // Boat
  
 uint64_t loop_delay = 500;
 uint64_t web_update_delay = 60000; //600000;    // every 10 minutes (600000)
-uint64_t bme280_update_delay = 25000; //600000; // every 10 minutes
-uint64_t packet_display_interval = 4000; // every 5 seconds
+uint64_t bme280_update_delay = 35000; //600000; // every 10 minutes
+uint64_t packet_display_interval = 3000; // every 5 seconds
 uint64_t last_web_update = millis(); // to avoid an alarm until the first one is sent
 
 elapsedMillis loop_timer;
@@ -87,11 +87,13 @@ void loop() {
     }
 
     if (web_update_timer > web_update_delay) {
+      ui->update_status_line("Transmitting to web");
       if (transmitToWeb()) {
         last_web_update = millis();
         packet_list->update_web_update_packet(last_web_update);
       }
       web_update_timer = 0;
+      ui->update_status_line("Waiting for data");
     }
 
     if (packet_display_timer > packet_display_interval) {

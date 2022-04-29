@@ -32,9 +32,10 @@ void connectToWifi() {
 }
 
 // BAS: if I start sending data to Arduino IO, this will go away.
-// But I'd like to keep it during the transition.
-// But no need to make it into, or include it in, a class, since it's going to go away.
+// But keep it during the transition.
+// No need to make it into, or include it in, a class, since it's going to go away.
 bool transmitToWeb(){
+    turnOnLed(); // both LED's
     Serial.println("Transmitting to Jim's website");
     bool success = false;
     
@@ -53,7 +54,7 @@ bool transmitToWeb(){
       + "&battery3=" + String(battery3)
       + "&temp=" + String(yourTemp)
       + "&humidity=" + String(yourHumidity)
-      + "&pressure=" + String(yourPressure);
+      + "&pressure=" + String(yourPressure, 2);
 
       //Serial.println(serverPath);
       // Your Domain name with URL path or IP address with path
@@ -77,8 +78,6 @@ bool transmitToWeb(){
       // Free resources
       http.end();
     }
-    turnOnLed(); // both LED's
-    delay(1000);
     turnOFFLed(); // both LED's
     return success;
  

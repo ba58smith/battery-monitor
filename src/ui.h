@@ -15,10 +15,10 @@
 
 // a quick way to adjust the vertical seperation between the 
 // text lines on the oled. So, below, line1 will start on y17, line2 on y32, etc.
-#define line1 17
-#define line2 32  // 20
-#define line3 47  // 40
-//#define line4 55
+#define line1 16
+#define line2 29
+#define line3 42
+#define line4 55
 
 #define blueLED 26
 
@@ -78,7 +78,7 @@ public:
      * datapoint.
      */
      
-   void display_one_packet(std::list<Packet_t>::iterator packet) {
+   void display_one_packet(Packet_it_t packet) {
        clear_packet_area();
        display_->setTextSize(1);
        display_->setCursor(0, line1);
@@ -99,12 +99,13 @@ public:
        else {
            display_->print("> 1 hr");
        }
-       
-       if (packet->alarm_code) {
-           display_->print(" Alarm ");
-           display_->print(packet->alarm_code);
-       }
        display_->setCursor(0, line3);
+       if (packet->alarm_code) {
+           display_->print("*** Alarm ");
+           display_->print(packet->alarm_code);
+           display_->print(" ***");
+       }
+       display_->setCursor(0, line4);
        if (packet->RSSI != 0) { // this is a packet from a transmitter
            display_->print("RSSI/SNR: ");
            display_->print(packet->RSSI);

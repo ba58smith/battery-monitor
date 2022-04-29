@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <list>
+#include "time.h"
 #include "packet_t.h"
 #include "config.h"
 #include "functions.h"
@@ -11,10 +12,11 @@
 
 #include <Adafruit_BME280.h>
 
+// BAS: these can go when I stop sending to Jim's website
 uint16_t yourTemp = 80;
-uint16_t yourPressure = 1022;
+float yourPressure = 29.92;
 uint16_t yourHumidity = 50;
-    
+
 
 /**
  * @brief PacketList is a class that manages all of the packets of data that are going to be
@@ -31,7 +33,7 @@ class PacketList {
 private:
     
     std::list<Packet_t> packets_;
-    std::list<Packet_t>::iterator loop_iterator_ = packets_.begin();
+    Packet_it_t loop_iterator_ = packets_.begin();
     UI* ui_;
     Adafruit_BME280* bme280_;
 
@@ -88,7 +90,7 @@ public:
                if (new_packet.transmitter_address >= ADDRESS_RANGE_LOWER 
                    && new_packet.transmitter_address <= ADDRESS_RANGE_UPPER) {
                    // now we know it's OK to process this packet
-                   //turnOnLed();
+                   turnOnLed();
                    ui_->update_status_line("It's one of ours", 2);
                    temp_str = Serial2.readStringUntil(',');
                    if (temp_str.length() == 0) {
@@ -169,7 +171,7 @@ public:
                    }
                                       
                    delay(1000); // to keep the LED on for more than a few ms
-                   //turnOFFLed();
+                   turnOFFLed();
                }
            }
        }
@@ -195,7 +197,7 @@ public:
        packet->data_name = "";
        packet->data_value = "";
        packet->alarm_code = 0;
-       packet->alarm_has_sounded = true;
+       packet->alarm_has_sounded = false;
        packet->RSSI = 0;
        packet->SNR = 0;
        packet->timestamp = 0;
@@ -230,22 +232,26 @@ public:
 
    void add_packet_to_list(Packet_t* packet) {
        if (packets_.empty()) {
-           Serial.println("Adding packet: " + packet->data_source + " " + packet->data_name);
+           Serial.println("Adding first packet: " + packet->data_source + " " + packet->data_name);
            packets_.push_back(*packet); // add it to the list
            uint8_t list_size = packets_.size();
            Serial.println("New packet count: " + String(list_size));
        }
        else { // look for the packet in the list
            bool message_found = false;
-           for (std::list<Packet_t>::iterator it = packets_.begin(); it != packets_.end(); ++it) {
+           for (Packet_it_t it = packets_.begin(); it != packets_.end(); ++it) {
                if (it->unique_id == packet->unique_id) { // this packet is already in the list
                    // update the data that's different with each packet from the same datapoint
                    it->data_value = packet->data_value;
+                   if (!it->alarm_code && packet->alarm_code) { // alarm code is going from 0 to non-zero
+                       it->alarm_has_sounded = false;
+                   }
                    it->alarm_code = packet->alarm_code;
                    it->RSSI = packet->RSSI;
                    it->SNR = packet->SNR;
                    it->timestamp = packet->timestamp;
                    message_found = true;
+                   Serial.println("Updating packet: " + packet->data_source + " " + packet->data_name);
                    break;
                }
            }
@@ -264,38 +270,69 @@ public:
     */
 
    void update_BME280_packets() {
+       turnOnLed();
        Serial.println("Updating BME280 data");
+       ui_->update_status_line("Updating BME280 data");
        int16_t alarm = 0;
        float data = (bme280_->readTemperature() * 1.8) + 32;
-       Serial.println("temperature: " + String(data));
+       Serial.println("temperature: " + String(data, 0));
        if (data <= TEMP_ALARM_RANGE_LOWER || data >= TEMP_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
        // BAS: get rid of next line when you stop updating Jim's website
        yourTemp = data;
-       create_generic_packet("BME280", "Temp (F)", (String)data, alarm);
+       create_generic_packet("BME280", "Temp (F)", String(data, 0), alarm);
+       alarm = 0;
        
-       data = (bme280_->readPressure() / 100.0);
-       Serial.println("pressure: " + String(data));
+       data = (bme280_->readPressure() * 0.0002953); // convert from Pascals to inches of mercury
+       Serial.println("pressure: " + String(data, 2));
        if (data <= PRESSURE_ALARM_RANGE_LOWER || data >= PRESSURE_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
        // BAS: get rid of next line when you stop updating Jim's website
        yourPressure = data;
-       create_generic_packet("BME280", "Pressure (hPa)", (String)data, alarm);
+       create_generic_packet("BME280", "Pressure (\"hg)", String(data, 2), alarm);
+       alarm = 0;
 
        data = (bme280_->readHumidity());
-       Serial.println("humidity: " + String(data));
+       Serial.println("humidity: " + String(data,2));
        if (data <= HUMIDITY_ALARM_RANGE_LOWER || data >= HUMIDITY_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
        // BAS: get rid of next line when you stop updating Jim's website
        yourHumidity = data;
-       create_generic_packet("BME280", "Humidity", (String)data, alarm);
+       create_generic_packet("BME280", "Humidity", String(data, 0), alarm);
+       alarm = 0;
+       turnOFFLed();
+       ui_->update_status_line("Waiting for data");
+   }
+
+
+   /**
+    * @brief Create a string of the current date and time 
+    */
+
+   String get_current_time() {
+       struct tm timeinfo;
+       configTime(-18000, 3600, "pool.ntp.org"); // Connect to NTP server with -5 TZ offset (-18000), 1 hr DST offset (3600).
+       if (!getLocalTime(&timeinfo)) {
+           Serial.println("Failed to obtain time");
+           return "Invalid time";
+       }
+       char time_buf[12];
+       strftime(time_buf, sizeof(time_buf), "%I:%M", &timeinfo);
+       if (timeinfo.tm_hour > 12) {
+           strcat(time_buf, " pm");
+       }
+       else {
+           strcat(time_buf, " am");
+       }
+       String current_time_string = time_buf;
+       return current_time_string;
    }
 
    /**
-    * @brief Create or update the packet that tells when the last web successful web update happened
+    * @brief Create or update the packet that tells when the last successful web update happened
     * 
     * @param last_successful_update - updated every time the web update is successful
     */
@@ -305,7 +342,7 @@ public:
        int16_t alarm = 0;
        String source = "Web";
        String name_of_data = "Last update";
-       String value = "12/31 @ 23:59"; // BAS: try to display actual date and time (TWatchSK gui.cpp line 801)
+       String value = get_current_time();
        if (millis() - last_successful_update > WEB_UPDATE_ALARM_AGE) {
            alarm = 333;
        }
@@ -317,7 +354,7 @@ public:
     * contents of each packet for a few seconds.
     */
 
-   std::list<Packet_t>::iterator advance_one_packet() {
+   Packet_it_t advance_one_packet() {
        if (loop_iterator_ == packets_.end()) {
            loop_iterator_ = packets_.begin();
        }
@@ -330,15 +367,6 @@ public:
     */
    uint8_t get_packet_list_size() {
        return packets_.size();
-   }
-
-   /**
-    * @brief Make some fake packets for testing
-    */
-
-   void make_fake_packets() { //String source, String name_of_data, String value, int16_t alarm
-       create_generic_packet("Truck", "Voltage", "12.60", 0);
-       create_generic_packet("Killer", "Voltage", "12.00", 0);
    }
 
 }; // class PacketList
