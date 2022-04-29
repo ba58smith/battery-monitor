@@ -88,9 +88,8 @@ public:
        display_->setCursor(0, line2);
        display_->print(packet->data_value);
        display_->print("    Age ");
-       int16_t seconds = packet->timestamp / 1000;
+       int32_t seconds = ((millis() - packet->timestamp) / 1000);
        if (seconds <= 3600) {
-           seconds = seconds % 3600;
            uint8_t minutes = seconds / 60;
            seconds = seconds % 60;
            char age_buffer[10];
