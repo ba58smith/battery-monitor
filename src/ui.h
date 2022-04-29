@@ -89,13 +89,18 @@ public:
        display_->print(packet->data_value);
        display_->print("    Age ");
        int16_t seconds = packet->timestamp / 1000;
-       //uint8_t hours = seconds/3600;
-       seconds = seconds%3600;
-	   uint8_t minutes = seconds/60;
-	   seconds = seconds%60;
-       char age_buffer[10];
-       sprintf(age_buffer, "%02d:%02d", minutes, seconds);
-       display_->print(age_buffer);
+       if (seconds <= 3600) {
+           seconds = seconds % 3600;
+           uint8_t minutes = seconds / 60;
+           seconds = seconds % 60;
+           char age_buffer[10];
+           sprintf(age_buffer, "%02d:%02d", minutes, seconds);
+           display_->print(age_buffer);
+       }
+       else {
+           display_->print("> 1 hr");
+       }
+       
        if (packet->alarm_code) {
            display_->print(" Alarm ");
            display_->print(packet->alarm_code);
