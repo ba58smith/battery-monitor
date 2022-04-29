@@ -165,7 +165,7 @@ public:
             update_status_line("Waiting for data", 0);
         }
         else { // not connected
-           update_status_line("Wait for data (no wifi)");
+           update_status_line("Wait for data:no wifi");
         }
     }
 

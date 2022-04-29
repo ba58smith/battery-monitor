@@ -13,6 +13,7 @@ float battery3 = 12.33; // Boat
 #include "ui.h"
 #include "packet_list.h"
 #include "elapsedMillis.h"
+#include <Adafruit_BME280.h>
 
 // If you change the NETWORK_ID or BASE_STATION_ADDRESS (in config.h):
 // Un-comment "#define LORA_SETUP_REQUIRED", upload and run once, then
@@ -21,8 +22,8 @@ float battery3 = 12.33; // Boat
 //#define LORA_SETUP_REQUIRED
  
 uint64_t loop_delay = 500;
-uint64_t web_update_delay = 600000;    // every 10 minutes (600000)
-uint64_t bme280_update_delay = 600000; // every 10 minutes
+uint64_t web_update_delay = 20000; //600000;    // every 10 minutes (600000)
+uint64_t bme280_update_delay = 10000; //600000; // every 10 minutes
 uint64_t packet_display_interval = 5000; // every 5 seconds
 uint64_t last_web_update = millis(); // to avoid an alarm until the first one is sent
 
@@ -35,7 +36,9 @@ auto* lora = new ReyaxLoRa();
 
 auto* ui = new UI();
 
-auto* packet_list = new PacketList(ui);
+auto* bme280 = new Adafruit_BME280();
+
+auto* packet_list = new PacketList(ui, bme280);
 
 void setup() {
   // For Serial Monitor display of debug messages
@@ -58,6 +61,8 @@ void setup() {
   // the LoRa parameters, if desired.
   // EXAMPLE: lora.set_output_power(10);
 
+  packet_list->start_bme280();
+  
   ui->prepare_display();
 
   // Connect to wifi

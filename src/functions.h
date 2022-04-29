@@ -38,12 +38,13 @@ bool transmitToWeb(){
     Serial.println("Transmitting to Jim's website");
     bool success = false;
     
-    if(WiFi.status() != WL_CONNECTED) {
-      Serial.println("WiFi Disconnected");
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("wifi not connected");
       connectToWifi();
     }
 
-    else {  
+    else {
+      Serial.println("Connected to wifi");
       HTTPClient http;
 
       String serverPath = serverName 

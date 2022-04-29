@@ -32,18 +32,29 @@ private:
     
     std::list<Packet_t> packets_;
     std::list<Packet_t>::iterator loop_iterator_ = packets_.begin();
-    Adafruit_BME280* bme280_;
     UI* ui_;
+    Adafruit_BME280* bme280_;
 
 public:
    /**
     * @brief Construct a new PacketList object.
     */
 
-    PacketList(UI* ui) : ui_{ui} {
-        bme280_ = new Adafruit_BME280();
-        if (!bme280_->begin(0x76)) {
+    PacketList(UI* ui, Adafruit_BME280* bme280) : ui_{ui}, bme280_{bme280} {}
+
+
+    /**
+     * @brief Start the BME280. It doesn't happen if it's inside
+     * the constructor, I think because that happens before setup()
+     */
+
+    bool start_bme280() {
+        bool success = bme280_->begin(0x76);
+        if (!success) {
           Serial.println("Could not find a valid BME280 sensor, check wiring!");
+        }
+        else {
+            Serial.println("BME280::begin() was successful");
         }
     }
 
@@ -63,6 +74,7 @@ public:
            String init_str = Serial2.readStringUntil('+');
            // BAS: remove this after all testing
            ui_->beep();
+           delay(2000); // give me time to start filming :-)
            Serial.println("New data coming in");
            ui_->update_status_line("New data coming in", 2);
            // see if the next 4 characters == "RCV="
