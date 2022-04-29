@@ -3,28 +3,18 @@
 
 #include <Arduino.h>
 #include <list>
+#include "packet_t.h"
 #include "config.h"
-#include "alarm.h"
 #include "functions.h"
+#include "alarm.h"
+#include "ui.h"
+
 #include <Adafruit_BME280.h>
 
 uint16_t yourTemp = 80;
 uint16_t yourPressure = 1022;
 uint16_t yourHumidity = 50;
-
-struct Packet_t {
-        String unique_id = "";
-        uint16_t transmitter_address = 0;
-        int8_t data_length = 0;
-        String data_source = "";
-        String data_name = "";
-        String data_value = "";
-        int16_t alarm_code = 0;
-        bool alarm_has_sounded = false;
-        int8_t RSSI = 0;
-        int8_t SNR = 0;
-        uint32_t timestamp = 0;
-    };    
+    
 
 /**
  * @brief PacketList is a class that manages all of the packets of data that are going to be
@@ -43,17 +33,17 @@ private:
     std::list<Packet_t> packets_;
     std::list<Packet_t>::iterator loop_iterator_ = packets_.begin();
     Adafruit_BME280* bme280_;
+    UI* ui_;
 
 public:
    /**
     * @brief Construct a new PacketList object.
     */
 
-    PacketList() {
+    PacketList(UI* ui) : ui_{ui} {
         bme280_ = new Adafruit_BME280();
         if (!bme280_->begin(0x76)) {
           Serial.println("Could not find a valid BME280 sensor, check wiring!");
-          // BAS: display something on the top line about the error.
         }
     }
 
@@ -72,18 +62,21 @@ public:
            // If there are two packets in the Serial2 buffer, make sure the second one
            // starts at the right place. If it doesn't find a "+", it won't find a valid packet.
            String init_str = Serial2.readStringUntil('+');
-           Serial.println("New packet coming in");
+           Serial.println("New data coming in");
+           ui_->update_status_line("New data coming in", 2);
            // see if the next 4 characters == "RCV="
            if (Serial2.readStringUntil('=') == "RCV") {
-               Serial.println("New packet received");
+               Serial.println("It's a LoRa packet");
+               ui_->update_status_line("It's a LoRa packet", 2);
                initialize_packet(&new_packet);
                // make sure this is from one of OUR transmitters:
                new_packet.transmitter_address = Serial2.readStringUntil(',').toInt();
-               Serial.println("Transmitter address = " + new_packet.transmitter_address);
+               Serial.println("Transmitter address = " + String(new_packet.transmitter_address));
                if (new_packet.transmitter_address >= ADDRESS_RANGE_LOWER 
                    && new_packet.transmitter_address <= ADDRESS_RANGE_UPPER) {
                    // now we know it's OK to process this packet
                    //turnOnLed();
+                   ui_->update_status_line("It's one of ours", 2);
                    temp_str = Serial2.readStringUntil(',');
                    if (temp_str.length() == 0) {
                        Serial.println("Error reading data_length from Serial2.");
@@ -95,13 +88,13 @@ public:
                    }
                    // Now we're into the <Data> portion of the packet, which is separated into smaller bits of
                    // data by the % separator.
-                   new_packet.data_source = Serial2.readStringUntil('%'); // "Bessie" or "Pool"
+                   new_packet.data_source = Serial2.readStringUntil('%'); // "Bessie", "Pool", etc.
                    Serial.println("Transmitter name = " + new_packet.data_source);
                    if (new_packet.data_source.length() == 0) {
                        Serial.println("Error reading data_source from Serial2.");
                        return false;
                    }
-                   new_packet.data_name = Serial2.readStringUntil('%'); // "Battry voltage" or "Water temp"
+                   new_packet.data_name = Serial2.readStringUntil('%'); // "Battery voltage", "Water temp", etc.
                    Serial.println("Data name = " + new_packet.data_name);
                    if (new_packet.data_name.length() == 0) {
                        Serial.println("Error reading data_name from Serial2.");
@@ -149,13 +142,31 @@ public:
                    
                    add_packet_to_list(&new_packet);
                    new_packet_received = true;
+                   ui_->update_status_line((new_packet.data_source + ":" +
+                                            new_packet.data_name + ":" +
+                                            new_packet.data_value), 5);
+                    ui_->update_status_line("Waiting for data");
+
+                   // BAS: remove this if() when I stop sending to Jim's website
+                   if (new_packet.data_source == "Bessie") {
+                       battery1 = new_packet.data_value.toFloat();
+                   }
+                   else if (new_packet.data_source == "Boat") {
+                       battery3 = new_packet.data_value.toFloat();
+                   }
                                       
                    delay(1000); // to keep the LED on for more than a few ms
                    //turnOFFLed();
                }
            }
        }
-       return new_packet_received;
+       if (new_packet_received) {
+           return "1 or more new packets rec'd";
+       }
+       else {
+           return "";
+       }
+       
    }
 
    
@@ -171,7 +182,7 @@ public:
        packet->data_name = "";
        packet->data_value = "";
        packet->alarm_code = 0;
-       packet->alarm_has_sounded = false;
+       packet->alarm_has_sounded = true;
        packet->RSSI = 0;
        packet->SNR = 0;
        packet->timestamp = 0;
@@ -211,16 +222,13 @@ public:
            uint8_t list_size = packets_.size();
            Serial.println("New packet count: " + String(list_size));
        }
-       else {
+       else { // look for the packet in the list
            bool message_found = false;
            for (std::list<Packet_t>::iterator it = packets_.begin(); it != packets_.end(); ++it) {
                if (it->unique_id == packet->unique_id) { // this packet is already in the list
                    // update the data that's different with each packet from the same datapoint
                    it->data_value = packet->data_value;
                    it->alarm_code = packet->alarm_code;
-                   if (packet->alarm_code == 0) {
-                       it->alarm_has_sounded = false;
-                   }
                    it->RSSI = packet->RSSI;
                    it->SNR = packet->SNR;
                    it->timestamp = packet->timestamp;
@@ -235,17 +243,6 @@ public:
                Serial.println("New packet count: " + String(list_size));
            }
        }
-   }
-
-   
-   /**
-    * @brief Update the alarm_has_sounded member of Packet_t, so that it can be done
-    * from the UI.
-    * BAS: is this necessary? Can I modify the packet that's sent to print, back in packets?
-    */
-
-   void set_alarm_sounded(String id) {
-       //Start an iterator, find the unique_id, update the field
    }
 
    
@@ -291,6 +288,7 @@ public:
     */
 
    void update_web_update_packet(uint64_t last_successful_update) { //String source, String name_of_data, String value, int16_t alarm
+       Serial.println("Updating web packet");
        int16_t alarm = 0;
        String source = "Web";
        String name_of_data = "Last update";
@@ -306,11 +304,11 @@ public:
     * contents of each packet for a few seconds.
     */
 
-   Packet_t advance_one_packet() {
+   std::list<Packet_t>::iterator advance_one_packet() {
        if (loop_iterator_ == packets_.end()) {
            loop_iterator_ = packets_.begin();
        }
-       return *loop_iterator_++;
+       return loop_iterator_++;
    }
 
    

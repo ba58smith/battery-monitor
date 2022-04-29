@@ -4,13 +4,10 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include "config.h"
+#include "packet_t.h"
 #include "packet_list.h"
 #include "ui.h"
-
-// BAS: get rid of these
-String battery1="11.11";
-String battery2="12.22";
-String battery3="13.33";
 
 String serverName = "http://www.totalcareprog.com/cgi-bin/butchmonitor_save.php";
 
@@ -25,12 +22,20 @@ void connectToWifi() {
      attempts++;
    }
    Serial.println("");
+   if (WiFi.status() != WL_CONNECTED) {
+     Serial.println("Not connected to wifi");
+     delay(500);
+   }
+   else {
+     Serial.println("Connected to " + WiFi.localIP().toString());
+   }
 }
 
 // BAS: if I start sending data to Arduino IO, this will go away.
 // But I'd like to keep it during the transition.
 // But no need to make it into, or include it in, a class, since it's going to go away.
 bool transmitToWeb(){
+    Serial.println("Transmitting to Jim's website");
     bool success = false;
     
     if(WiFi.status() != WL_CONNECTED) {
@@ -42,12 +47,12 @@ bool transmitToWeb(){
       HTTPClient http;
 
       String serverPath = serverName 
-      + "?battery1=" + battery1.toFloat() 
-      + "&battery2=" + battery2.toFloat() 
-      + "&battery3=" + battery3.toFloat()
-      + "&temp=" + yourTemp
-      + "&humidity=" + yourHumidity
-      + "&pressure=" + yourPressure;
+      + "?battery1=" + String(battery1, 2) 
+      + "&battery2=" + String(battery2, 2)
+      + "&battery3=" + String(battery3)
+      + "&temp=" + String(yourTemp)
+      + "&humidity=" + String(yourHumidity)
+      + "&pressure=" + String(yourPressure);
 
       //Serial.println(serverPath);
       // Your Domain name with URL path or IP address with path

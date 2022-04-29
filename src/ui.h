@@ -3,9 +3,11 @@
 
 //#include "Arduino.h"
 #include "config.h"
+#include "functions.h"
+#include "packet_t.h"
+#include "packet_list.h"
 #include <Adafruit_SSD1306.h>
 #include "alarm.h"
-#include "packet_list.h"
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -65,12 +67,13 @@ public:
         }
         display_->clearDisplay();
         display_->setCursor(0,0);
-        delay(2000); //BAS: is a delay necessary at all?
+        delay(500); //BAS: is a delay necessary at all?
         // Draw a single pixel in white (dont recall why i need this, but when i took it out it broke)
-        // BAS: surely this can't be required?
-        display_->setTextSize(1);
+        // BAS: surely this can't be required? BUT IT IS!
         display_->drawPixel(0, 0, SSD1306_WHITE);
         display_->setTextColor(SSD1306_WHITE);
+        display_about_screen();
+        display_->setTextSize(1);
     }
 
     /**
@@ -78,34 +81,52 @@ public:
      * datapoint.
      */
      
-   void display_one_packet(Packet_t packet) {
+   void display_one_packet(std::list<Packet_t>::iterator packet) {
        clear_packet_area();
        display_->setTextSize(1);
        display_->setCursor(0, line1);
-       display_->print(packet.data_source);
+       display_->print(packet->data_source);
        display_->print("-");
-       display_->println(packet.data_name);
+       display_->println(packet->data_name);
        display_->setCursor(0, line2);
-       display_->print(packet.data_value);
+       display_->print(packet->data_value);
        display_->print(" Age ");
        // BAS: make this display more than just seconds - see TWatchSK's "uptime"
-       display_->print((millis() - packet.timestamp) / 1000);
-       if (packet.alarm_code) {
+       display_->print((millis() - packet->timestamp) / 1000);
+       if (packet->alarm_code) {
            display_->print(" Alarm ");
-           display_->print(packet.alarm_code);
+           display_->print(packet->alarm_code);
        }
        display_->setCursor(0, line3);
-       if (packet.RSSI != 0) { // this is a packet from a transmitter
+       if (packet->RSSI != 0) { // this is a packet from a transmitter
            display_->print("RSSI/SNR: ");
-           display_->print(packet.RSSI);
+           display_->print(packet->RSSI);
            display_->print("/");
-           display_->print(packet.SNR);
+           display_->print(packet->SNR);
        }
        display_->display();
-       if (packet.alarm_code && !packet.alarm_has_sounded) {
-           alarm_->sound_alarm(packet.alarm_code);
-           packet.alarm_has_sounded = true;
+       if (packet->alarm_code && !packet->alarm_has_sounded) {
+           alarm_->sound_alarm(packet->alarm_code);
+           packet->alarm_has_sounded = true;
        }
+   }
+
+   
+   /**
+    * @brief Uses the whole screen to display info about the program 
+    */
+   
+   void display_about_screen() {
+       clear_packet_area();
+       display_->setTextSize(1);
+       display_->setCursor(0, line1);
+       display_->println("Boat Monitor");
+       display_->setCursor(0, line2);
+       display_->println("Ver 1.90");
+       display_->setCursor(0, line3);
+       display_->print("28 Apr, 2020");
+       display_->display();
+       update_status_line("J. Booth's", 5, 2);
    }
 
    
@@ -118,13 +139,15 @@ public:
     * on the screen until the next explicit update, use 0.
     */
 
-   void update_status_line(String status_str, uint8_t duration_seconds = 1) {
+   void update_status_line(String status_str, uint8_t duration_seconds = 1, uint8_t temp_font_size = 1) {
        clear_status_line();
+       display_->setTextSize(temp_font_size);
        display_->print(status_str);
        display_->display();
        if (duration_seconds) {
            delay(duration_seconds * 1000);
        }
+       display_->setTextSize(1);
    }
 
     /**
@@ -139,9 +162,14 @@ public:
      * @brief Display the status just after connecting to wifi.
      */
     void after_connect_to_wifi_screen(String local_ip) {
-        update_status_line("Connected to:");
-        update_status_line(local_ip, 3);
-        update_status_line("Waiting for data", 0);
+        if (WiFi.status() == WL_CONNECTED) {
+            update_status_line("Connected to:");
+            update_status_line(local_ip, 3);
+            update_status_line("Waiting for data", 0);
+        }
+        else { // not connected
+           update_status_line("Wait for data (no wifi)");
+        }
     }
 
     

@@ -1,8 +1,13 @@
 // Base station (receiver) code
 
-#include <Arduino.h>
+// BAS: get rid of these when no longer sending to Jim's website
+float battery1 = 12.11; // Bess1
+float battery2 = 12.22; // Bess2
+float battery3 = 12.33; // Boat
 
+#include <Arduino.h>
 #include "config.h"
+#include "packet_t.h"
 #include "functions.h"
 #include "reyax_lora.h"
 #include "ui.h"
@@ -30,7 +35,7 @@ auto* lora = new ReyaxLoRa();
 
 auto* ui = new UI();
 
-auto* packet_list = new PacketList();
+auto* packet_list = new PacketList(ui);
 
 void setup() {
   // For Serial Monitor display of debug messages
@@ -87,6 +92,7 @@ void loop() {
     }
 
     if (packet_display_timer > packet_display_interval) {
+      // BAS: I think there is a faster way to determine if the list is not empty - don't have to get the list size
       uint8_t list_size = packet_list->get_packet_list_size();
       if (list_size) { // there are packets to display
         ui->display_one_packet(packet_list->advance_one_packet());
