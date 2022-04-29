@@ -87,9 +87,15 @@ public:
        display_->println(packet->data_name);
        display_->setCursor(0, line2);
        display_->print(packet->data_value);
-       display_->print(" Age ");
-       // BAS: make this display more than just seconds - see TWatchSK's "uptime"
-       display_->print((millis() - packet->timestamp) / 1000);
+       display_->print("    Age ");
+       int16_t seconds = packet->timestamp / 1000;
+       //uint8_t hours = seconds/3600;
+       seconds = seconds%3600;
+	   uint8_t minutes = seconds/60;
+	   seconds = seconds%60;
+       char age_buffer[10];
+       sprintf(age_buffer, "%02d:%02d", minutes, seconds);
+       display_->print(age_buffer);
        if (packet->alarm_code) {
            display_->print(" Alarm ");
            display_->print(packet->alarm_code);

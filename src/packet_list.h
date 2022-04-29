@@ -48,7 +48,7 @@ public:
      * the constructor, I think because that happens before setup()
      */
 
-    bool start_bme280() {
+    void start_bme280() {
         bool success = bme280_->begin(0x76);
         if (!success) {
           Serial.println("Could not find a valid BME280 sensor, check wiring!");
