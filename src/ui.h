@@ -85,29 +85,37 @@ public:
        display_->println(packet->data_name);
        display_->setCursor(0, line2);
        display_->print(packet->data_value);
-       display_->print("    Age ");
+       // convert Age to a string of M:SS
        int32_t seconds = ((millis() - packet->timestamp) / 1000);
+       char age_buffer[10];
+       String age_str = " Age: ";
        if (seconds <= 3600) {
            uint8_t minutes = seconds / 60;
            seconds = seconds % 60;
-           char age_buffer[10];
-           sprintf(age_buffer, "%02d:%02d", minutes, seconds);
-           display_->print(age_buffer);
+           sprintf(age_buffer, "%01d:%02d", minutes, seconds);
+           age_str = age_str + age_buffer; // now it's like " Age: 1:28"
+           
        }
        else {
-           display_->print("> 1 hr");
+           age_str = age_str + "> 1 hr"; // now it's " Age: > 1 hr"
        }
+       // pad the space btwn data_value and "Age" to right-justify the age string
+       uint8_t text_padding_size = 21 - age_str.length() - packet->data_value.length();
+       for (uint8_t x = 0; x < text_padding_size; x++) {
+            age_str = " " + age_str;
+        }
+       display_->print(age_str);
        display_->setCursor(0, line3);
        if (packet->alarm_code) {
-           display_->print("*** Alarm ");
+           display_->print("  *** Alarm ");
            display_->print(packet->alarm_code);
            display_->print(" ***");
        }
        display_->setCursor(0, line4);
        if (packet->RSSI != 0) { // this is a packet from a transmitter
-           display_->print("RSSI/SNR: ");
+           display_->print("RSSI: ");
            display_->print(packet->RSSI);
-           display_->print("/");
+           display_->print("  /  SNR: ");
            display_->print(packet->SNR);
        }
        display_->display();

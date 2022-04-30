@@ -1,9 +1,9 @@
 // Base station (receiver) code
 
 // BAS: get rid of these when no longer sending to Jim's website
-float battery1 = 12.11; // Bess1
-float battery2 = 12.22; // Bess2
-float battery3 = 12.33; // Boat
+float battery1 = 0.0; // Bess1
+float battery2 = 0.0; // Bess2
+float battery3 = 0.0; // Boat
 
 #include <Arduino.h>
 #include "config.h"
