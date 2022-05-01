@@ -70,7 +70,7 @@ public:
             HTTPClient http;
             String serverPath = jims_website_url_ + "?battery1=" + String(battery1, 2) 
                               + "&battery2=" + String(battery2, 2) + "&battery3=" + String(battery3) 
-                              + "&temp=" + String(yourTemp, 1) + "&humidity=" + String(yourHumidity, 1) 
+                              + "&temp=" + String(yourTemp) + "&humidity=" + String(yourHumidity) 
                               + "&pressure=" + String(yourPressure, 2);
             // Your Domain name with URL path or IP address with path
             http.begin(serverPath.c_str());
