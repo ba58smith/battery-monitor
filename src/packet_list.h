@@ -66,9 +66,6 @@ public:
            // BAS: If there are two packets in the Serial2 buffer, make sure the second one
            // starts at the right place. If it doesn't find a "+", it won't find a valid packet.
            String init_str = Serial2.readStringUntil('+');
-           // BAS: remove this after all testing
-           ui_->beep();
-           delay(2000); // BAS: give me time to start filming :-)
            Serial.println("New data coming in");
            ui_->update_status_line("New data coming in", 2);
            // see if the next 4 characters == "RCV="
