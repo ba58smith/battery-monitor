@@ -26,7 +26,6 @@ uint16_t yourHumidity = 50;
 // Un-comment and change the baud rate below to change it.
 // #define LORA_BAUD_RATE 115200ULL     // default 115200
 
-// BAS: can these be here so user has to go to only here, but be used in internet.h?
 // Put your wifi credentials here
 const char *SSID = "KeyAlmostWest";
 const char *PASSWORD = "sfaesfae";
