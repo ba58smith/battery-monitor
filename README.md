@@ -8,4 +8,5 @@ Version 2.0 (1 May, 2022) of the receiver is completely generic for the receipt,
 The only thing that's still transmitter-specific in v2.00 of the receiver is the data that's being sent to Jim's website - that is specific to the sensors that were in place when he gave me my own hardware to start playing with (3 batteries, and the data from the BME280 that's connected to the receiver hardware). The next major version will send all data to some IoT website where it will be easy to send and display new data from new transmitters, all completely generically.
 
 ![image](https://user-images.githubusercontent.com/15186790/166153259-cdd14a00-4b45-4179-99bb-5f8d250c6018.png)
-Here's the receiver "under the hood".
+
+Here's the receiver "under the hood", with the BME280 temp, pressure, and humidity sensor on the end of the 4-wire cable.
