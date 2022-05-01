@@ -3,11 +3,11 @@
 
 //#include "Arduino.h"
 #include "config.h"
-#include "functions.h"
 #include "packet_t.h"
 #include "packet_list.h"
 #include <Adafruit_SSD1306.h>
 #include "alarm.h"
+#include "internet.h"
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -20,27 +20,12 @@
 #define line3 42
 #define line4 55
 
-#define blueLED 26
-
-void turnOnLed() {
-    pinMode(LED_BUILTIN, OUTPUT);
-    pinMode(blueLED, OUTPUT);
-    digitalWrite(LED_BUILTIN, HIGH); // turn the LED on
-    digitalWrite(blueLED, HIGH);
-}
-
-void turnOFFLed() {
-    digitalWrite(LED_BUILTIN, LOW); // turn the LED on
-    digitalWrite(blueLED, LOW);
-}
-
 /**
- * @brief UI is the class that controls the display and the alarm.
- *        It displays "status info" on the top (yellow) line, and cycles
- *        through all of the other data the receiver is getting from the
- *        transmitters. This class also controls the Alarm, which is used
- *        when any packet's data is "out of range", but could
- *        also be used to alert of something like no wifi, or a failed web update.
+ * @brief UI is the class that controls the display, the alarm, and the LEDs. It displays
+ * "status info" on the top (yellow) line, and cycles through all of the other data 
+ * the receiver is getting from the transmitters. This class also controls the Alarm,
+ * which is used when any packet's data is "out of range", but could also be used to alert
+ * of something like no wifi, or a failed web update. And it controls the LEDs.
  */
 
 class UI {
@@ -48,16 +33,24 @@ class UI {
 private:
     Adafruit_SSD1306* display_ = NULL;
     Alarm* alarm_;
+    Internet* net_ = NULL;
+    uint8_t blue_led_pin_;
+    uint8_t buzzer_pin_;
 
 public:
     
-    UI() {
+    UI(uint8_t blue_led_pin, uint8_t buzzer_pin) : blue_led_pin_{blue_led_pin}, buzzer_pin_{buzzer_pin} {
         display_ = new Adafruit_SSD1306(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-        alarm_ = new Alarm(buzzerPin);
+        alarm_ = new Alarm(buzzer_pin_);
+        net_ = new Internet();
+        pinMode(blue_led_pin, OUTPUT);
+        digitalWrite(blue_led_pin, LOW);
+        pinMode(LED_BUILTIN, OUTPUT);
+        digitalWrite(LED_BUILTIN, LOW);
     }
 
     void prepare_display() {
-        if (display_->begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
+        if (display_->begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
             Serial.println("OLED successfully started");
         }
         else {
@@ -72,7 +65,7 @@ public:
     }
 
     /**
-     * @brief Updates the bottom 3 lines of the display to show everything about a single
+     * @brief Updates the bottom 4 lines of the display to show everything about a single
      * datapoint.
      */
      
@@ -89,12 +82,11 @@ public:
        int32_t seconds = ((millis() - packet->timestamp) / 1000);
        char age_buffer[10];
        String age_str = " Age: ";
-       if (seconds <= 3600) {
+       if (seconds < 3600) { // less than 1 hour old
            uint8_t minutes = seconds / 60;
            seconds = seconds % 60;
            sprintf(age_buffer, "%01d:%02d", minutes, seconds);
-           age_str = age_str + age_buffer; // now it's like " Age: 1:28"
-           
+           age_str = age_str + age_buffer; // now it's " Age: 1:28"
        }
        else {
            age_str = age_str + "> 1 hr"; // now it's " Age: > 1 hr"
@@ -147,10 +139,9 @@ public:
    /**
     * @brief Updates the yellow status line (the top line of the OLED)
     * 
-    * @param status_str - The string you want to display there - max is about 21.
+    * @param status_str - The string you want to display there - max length is 21.
     * @param duration_seconds - # of seconds to display this string before the next update 
-    * of the status line. If not specified, it's 1 second. If you want this string to stay
-    * on the screen until the next explicit update, use 0.
+    * of the status line. If not specified, it's 1 second.
     */
 
    void update_status_line(String status_str, uint8_t duration_seconds = 1, uint8_t temp_font_size = 1) {
@@ -169,14 +160,14 @@ public:
      */
     void before_connect_to_wifi_screen() {
         update_status_line("Connecting to:");
-        update_status_line(SSID);
+        update_status_line(net_->get_ssid());
     }
 
     /**
      * @brief Display the status just after connecting to wifi.
      */
     void after_connect_to_wifi_screen(String local_ip) {
-        if (WiFi.status() == WL_CONNECTED) {
+        if (net_->connected_to_wifi()) {  
             update_status_line("Connected to:");
             update_status_line(local_ip, 3);
             update_status_line("Waiting for data", 0);
@@ -194,7 +185,7 @@ public:
     
     void clear_status_line() {
         display_->setCursor(0, 0);
-        // This is how Jim did it:
+        // This is how Jim did it, and it works
         for (int y = 0; y <= 15; y++) {
             for (int x = 0; x < 127; x++) {
                 display_->drawPixel(x, y, BLACK);
@@ -225,7 +216,17 @@ public:
     void beep(uint8_t duration = 5) {
         alarm_->soundAlarm(duration, 1);
     }
-    
+
+    void turnOnLed() {
+        digitalWrite(LED_BUILTIN, HIGH);
+        digitalWrite(blue_led_pin_, HIGH);
+    }
+
+    void turnOFFLed() {
+        digitalWrite(LED_BUILTIN, LOW);
+        digitalWrite(blue_led_pin_, LOW);
+    }
+
 }; // class UI
 
 #endif // _UI_H_

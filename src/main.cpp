@@ -8,10 +8,11 @@ float battery3 = 0.0; // Boat
 #include <Arduino.h>
 #include "config.h"
 #include "packet_t.h"
-#include "functions.h"
+#include "packet_list.h"
 #include "reyax_lora.h"
 #include "ui.h"
-#include "packet_list.h"
+
+#include "internet.h"
 #include "elapsedMillis.h"
 #include <Adafruit_BME280.h>
 
@@ -20,6 +21,9 @@ float battery3 = 0.0; // Boat
 // comment out "#define LORA_SETUP_REQUIRED".
 // That will prevent writing the NETWORK_ID and BASE_STATION_ADDRESS to EEPROM every run.
 //#define LORA_SETUP_REQUIRED
+
+uint8_t blue_led_pin = 26;
+uint8_t buzzer_pin = 4;
  
 uint64_t loop_delay = 500;
 uint64_t web_update_delay = 60000; //600000;    // every 10 minutes (600000)
@@ -34,22 +38,19 @@ elapsedMillis packet_display_timer;
 
 auto* lora = new ReyaxLoRa();
 
-auto* ui = new UI();
+auto* ui = new UI(blue_led_pin, buzzer_pin);
 
 auto* bme280 = new Adafruit_BME280();
 
 auto* packet_list = new PacketList(ui, bme280);
+
+auto* net = new Internet();
 
 void setup() {
   // For Serial Monitor display of debug messages
   Serial.begin(115200);
   // Wait for the serial connection
   while (!Serial);
-
-  pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(blueLED, OUTPUT);
-  pinMode(buzzerPin, OUTPUT);
-  digitalWrite(buzzerPin, LOW);
 
   lora->initialize();
 
@@ -67,7 +68,7 @@ void setup() {
 
   // Connect to wifi
   ui->before_connect_to_wifi_screen();
-  connectToWifi(); //BAS: replace this with AdafruitIO::connect(). I need to call that command at some point,
+  net->connect_to_wifi(); //BAS: replace this with AdafruitIO::connect(). I need to call that command at some point,
   // and the first thing it does is disconnect from wifi, then re-connect.
   ui->after_connect_to_wifi_screen(WiFi.localIP().toString());
 
@@ -77,28 +78,29 @@ void loop() {
   
   if (loop_timer > loop_delay) { // won't do anything until it runs the first time for loop_delay ms - that's OK.
     
-    // check for new data on Serial2
+    // check for new packets coming in from transmitters on Serial2
     packet_list->get_new_packets();
 
-    // read current bme280 data and display it
+    // read current bme280 data and add/update its packets in the list
     if (bme280_timer > bme280_update_delay) {
       packet_list->update_BME280_packets();
       bme280_timer = 0;
     }
 
     if (web_update_timer > web_update_delay) {
+      ui->turnOnLed();
       ui->update_status_line("Transmitting to web");
-      if (transmitToWeb()) {
+      if (net->transmit_to_web()) {
         last_web_update = millis();
         packet_list->update_web_update_packet(last_web_update);
       }
       web_update_timer = 0;
+      ui->turnOFFLed();
       ui->update_status_line("Waiting for data");
     }
 
     if (packet_display_timer > packet_display_interval) {
-      uint8_t list_size = packet_list->get_packet_list_size();
-      if (list_size) { // there are packets to display
+      if (packet_list->packet_list_not_empty()) {
         ui->display_one_packet(packet_list->advance_one_packet());
         packet_display_timer = 0;
       }

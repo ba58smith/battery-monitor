@@ -6,16 +6,10 @@
 #include "time.h"
 #include "packet_t.h"
 #include "config.h"
-#include "functions.h"
 #include "alarm.h"
 #include "ui.h"
 
 #include <Adafruit_BME280.h>
-
-// BAS: these can go when I stop sending to Jim's website
-uint16_t yourTemp = 80;
-float yourPressure = 29.92;
-uint16_t yourHumidity = 50;
 
 
 /**
@@ -91,7 +85,7 @@ public:
                if (new_packet.transmitter_address >= ADDRESS_RANGE_LOWER 
                    && new_packet.transmitter_address <= ADDRESS_RANGE_UPPER) {
                    // now we know it's OK to process this packet
-                   turnOnLed();
+                   ui_->turnOnLed();
                    ui_->update_status_line("It's one of ours", 2);
                    temp_str = Serial2.readStringUntil(',');
                    if (temp_str.length() == 0) {
@@ -168,7 +162,7 @@ public:
                    else if (new_packet.data_source == "Boat") {
                        battery3 = new_packet.data_value.toFloat();
                    }
-                   turnOFFLed();
+                   ui_->turnOFFLed();
                }
            }
        }
@@ -266,12 +260,12 @@ public:
     */
 
    void update_BME280_packets() {
-       turnOnLed();
+       ui_->turnOnLed();
        Serial.println("Updating BME280 data");
        ui_->update_status_line("Updating BME280 data");
        int16_t alarm = 0;
        float data = (bme280_->readTemperature() * 1.8) + 32;
-       Serial.println("temperature: " + String(data, 0));
+       Serial.println("temperature: " + String(data, 1));
        if (data <= TEMP_ALARM_RANGE_LOWER || data >= TEMP_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
@@ -291,7 +285,7 @@ public:
        alarm = 0;
 
        data = (bme280_->readHumidity());
-       Serial.println("humidity: " + String(data,2));
+       Serial.println("humidity: " + String(data, 1));
        if (data <= HUMIDITY_ALARM_RANGE_LOWER || data >= HUMIDITY_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
@@ -299,7 +293,7 @@ public:
        yourHumidity = data;
        create_generic_packet("BME280", "Humidity", String(data, 0), alarm);
        alarm = 0;
-       turnOFFLed();
+       ui_->turnOFFLed();
        ui_->update_status_line("Waiting for data");
    }
 
@@ -361,8 +355,8 @@ public:
    /**
     * @brief Used in main.cpp to see if there are packets to display
     */
-   uint8_t get_packet_list_size() {
-       return packets_.size();
+   uint8_t packet_list_not_empty() {
+       return !packets_.empty();
    }
 
 }; // class PacketList

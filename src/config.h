@@ -1,6 +1,11 @@
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
+// BAS: these can go when I stop sending to Jim's website
+uint16_t yourTemp = 80;
+float yourPressure = 29.92;
+uint16_t yourHumidity = 50;
+
 #define BASE_STATION
 
 // Network must be the same (14) for all of my units to communicate w/ each other.
@@ -21,6 +26,7 @@
 // Un-comment and change the baud rate below to change it.
 // #define LORA_BAUD_RATE 115200ULL     // default 115200
 
+// BAS: can these be here so user has to go to only here, but be used in internet.h?
 // Put your wifi credentials here
 const char *SSID = "KeyAlmostWest";
 const char *PASSWORD = "sfaesfae";
@@ -34,7 +40,5 @@ const char *PASSWORD = "sfaesfae";
 #define PRESSURE_ALARM_RANGE_UPPER 31.0F // s/b 31.0
 #define HUMIDITY_ALARM_RANGE_LOWER 30.0F   // s/b 30.0 - 50.0 per Mayo Clinic
 #define HUMIDITY_ALARM_RANGE_UPPER 50.0F
-
-#define buzzerPin 4
 
 #endif // _CONFIG_H_
