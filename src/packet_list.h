@@ -11,7 +11,6 @@
 
 #include <Adafruit_BME280.h>
 
-
 /**
  * @brief PacketList is a class that manages all of the packets of data that are going to be
  * displayed on the OLED. Packets are received from the transmitters, and they come from any physical
@@ -38,7 +37,6 @@ public:
 
     PacketList(UI* ui, Adafruit_BME280* bme280) : ui_{ui}, bme280_{bme280} {}
 
-
     /**
      * @brief Start the BME280. It doesn't happen if it's inside
      * the constructor, I think because that happens before setup()
@@ -53,14 +51,13 @@ public:
             Serial.println("BME280::begin() was successful");
         }
     }
-
    
-   /**
+    /**
     * @brief Populate a new Packet_t from the data coming in through Serial2, then add it
     * to, or update it in, the list of packets.
     */
 
-   bool get_new_packets() {
+    bool get_new_packets() {
        Packet_t new_packet;
        bool new_packet_received = false;
        String temp_str = "";
@@ -174,12 +171,11 @@ public:
        }
     }
 
-   
-   /**
+    /**
     * @brief Set all data members to blank or 0.
     */
 
-   void initialize_packet(Packet_t* packet) {
+    void initialize_packet(Packet_t* packet) {
        packet->unique_id = "";
        packet->transmitter_address = 0;
        packet->data_length = 0;
@@ -191,10 +187,9 @@ public:
        packet->RSSI = 0;
        packet->SNR = 0;
        packet->timestamp = 0;
-   }
-
+    }
    
-   /**
+    /**
     * @brief Create a new "generic" packet with data from any source, then call add_packet_to_list().
     * 
     * @param source - "Truck" or "Boat" or "Pool", etc.
@@ -203,7 +198,7 @@ public:
     * @param alarm Alarm code
     */
 
-   void create_generic_packet(String source, String name_of_data, String value, int16_t alarm) {
+    void create_generic_packet(String source, String name_of_data, String value, int16_t alarm) {
        Packet_t new_packet;
        new_packet.unique_id = source + name_of_data;
        new_packet.data_source = source;
@@ -212,15 +207,14 @@ public:
        new_packet.alarm_code = alarm;
        new_packet.timestamp = millis();
        add_packet_to_list(&new_packet);
-   }
-
+    }
    
-   /**
+    /**
     * @brief Add a new packet to the list, or update the list if there is already a packet in it for
     * the same datapoint as the new packet.
     */
 
-   void add_packet_to_list(Packet_t* packet) {
+    void add_packet_to_list(Packet_t* packet) {
        if (packets_.empty()) {
            Serial.println("Adding first packet: " + packet->data_source + " " + packet->data_name);
            packets_.push_back(*packet); // add it to the list
@@ -252,14 +246,13 @@ public:
                Serial.println("New packet count: " + String(list_size));
            }
        }
-   }
-
+    }
    
-   /**
+    /**
     * @brief Add or update current BME280 data to packet_list_
     */
 
-   void update_BME280_packets() {
+    void update_BME280_packets() {
        ui_->turnOnLed();
        Serial.println("Updating BME280 data");
        ui_->update_status_line("Updating BME280 data");
@@ -295,14 +288,13 @@ public:
        alarm = 0;
        ui_->turnOFFLed();
        ui_->update_status_line("Waiting for data");
-   }
+    }
 
-
-   /**
+    /**
     * @brief Create a string of the current date and time 
     */
 
-   String get_current_time() {
+    String get_current_time() {
        struct tm timeinfo;
        configTime(-18000, 3600, "pool.ntp.org"); // Connect to NTP server with -5 TZ offset (-18000), 1 hr DST offset (3600).
        if (!getLocalTime(&timeinfo)) {
@@ -319,15 +311,15 @@ public:
        }
        String current_time_string = time_buf;
        return current_time_string;
-   }
+    }
 
-   /**
+    /**
     * @brief Create or update the packet that tells when the last successful web update happened
     * 
     * @param last_successful_update - updated every time the web update is successful
     */
 
-   void update_web_update_packet(uint64_t last_successful_update) { //String source, String name_of_data, String value, int16_t alarm
+    void update_web_update_packet(uint64_t last_successful_update) { //String source, String name_of_data, String value, int16_t alarm
        Serial.println("Updating web packet");
        int16_t alarm = 0;
        String source = "Web";
@@ -337,27 +329,27 @@ public:
            alarm = 333;
        }
        create_generic_packet(source, name_of_data, value, alarm);
-   }
+    }
 
-   /**
+    /**
     * @brief Iterates through packets_ one packet at a time. Called in main.cpp to display the
     * contents of each packet for a few seconds.
     */
 
-   Packet_it_t advance_one_packet() {
+    Packet_it_t advance_one_packet() {
        if (loop_iterator_ == packets_.end()) {
            loop_iterator_ = packets_.begin();
        }
        return loop_iterator_++;
-   }
+    }
 
-   
-   /**
+    /**
     * @brief Used in main.cpp to see if there are packets to display
     */
-   uint8_t packet_list_not_empty() {
+
+    uint8_t packet_list_not_empty() {
        return !packets_.empty();
-   }
+    }
 
 }; // class PacketList
 

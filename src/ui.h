@@ -69,7 +69,7 @@ public:
      * datapoint.
      */
      
-   void display_one_packet(Packet_it_t packet) {
+    void display_one_packet(Packet_it_t packet) {
        clear_packet_area();
        display_->setTextSize(1);
        display_->setCursor(0, line1);
@@ -115,28 +115,26 @@ public:
            alarm_->sound_alarm(packet->alarm_code);
            packet->alarm_has_sounded = true;
        }
-   }
-
+    }
    
-   /**
-    * @brief Uses the whole screen to display info about the program 
+    /**
+     * @brief Uses the whole screen to display info about the program 
     */
    
-   void display_about_screen() {
+    void display_about_screen() {
        clear_packet_area();
        display_->setTextSize(1);
        display_->setCursor(0, line1);
        display_->println("Boat Monitor");
        display_->setCursor(0, line2);
-       display_->println("Ver 1.90");
+       display_->println("Ver 2.00");
        display_->setCursor(0, line3);
-       display_->print("28 Apr, 2020");
+       display_->print("1 May, 2020");
        display_->display();
        update_status_line("JimBooth's", 5, 2);
-   }
-
+    }
    
-   /**
+    /**
     * @brief Updates the yellow status line (the top line of the OLED)
     * 
     * @param status_str - The string you want to display there - max length is 21.
@@ -144,7 +142,7 @@ public:
     * of the status line. If not specified, it's 1 second.
     */
 
-   void update_status_line(String status_str, uint8_t duration_seconds = 1, uint8_t temp_font_size = 1) {
+    void update_status_line(String status_str, uint8_t duration_seconds = 1, uint8_t temp_font_size = 1) {
        clear_status_line();
        display_->setTextSize(temp_font_size);
        display_->print(status_str);
@@ -153,7 +151,7 @@ public:
            delay(duration_seconds * 1000);
        }
        display_->setTextSize(1);
-   }
+    }
 
     /**
      * @brief Display the status just before connecting to wifi.
@@ -176,7 +174,6 @@ public:
            update_status_line("Wait for data:no wifi");
         }
     }
-
     
     /**
      * @brief Clears the top yellow line of the OLED and prepares it for the next text

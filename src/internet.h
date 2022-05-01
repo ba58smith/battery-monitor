@@ -28,7 +28,6 @@ public:
     // and remove this one:
     Internet() {}
 
-
     /**
      * @brief Called during setup() and by transmitToWeb if necessary.
      */
@@ -54,9 +53,7 @@ public:
 
     // BAS: if I start sending data to Arduino IO, this will go away.
     // But keep it during the transition.
-    // No need to make it into, or include it in, a class, since it's going to go away.
-    bool transmit_to_web()
-    {
+    bool transmit_to_web() {
         // BAS: add back after figuring out how to make UI and Internet point to each other
         // ui_->turnOnLed(); // both LED's
         Serial.println("Transmitting to Jim's website");

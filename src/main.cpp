@@ -25,13 +25,13 @@ float battery3 = 0.0; // Boat
 uint8_t blue_led_pin = 26;
 uint8_t buzzer_pin = 4;
  
-uint64_t loop_delay = 500;
-uint64_t web_update_delay = 60000; //600000;    // every 10 minutes (600000)
-uint64_t bme280_update_delay = 35000; //600000; // every 10 minutes
+uint64_t packet_check_delay = 500;
+uint64_t web_update_delay = 660000;    // every 11:00
+uint64_t bme280_update_delay = 600000; // every 10:00
 uint64_t packet_display_interval = 3500; // every 3.5 seconds
 uint64_t last_web_update = millis(); // to avoid an alarm until the first one is sent
 
-elapsedMillis loop_timer;
+elapsedMillis packet_check_timer;
 elapsedMillis web_update_timer;
 elapsedMillis bme280_timer;
 elapsedMillis packet_display_timer;
@@ -76,37 +76,35 @@ void setup() {
 
 void loop() {
   
-  if (loop_timer > loop_delay) { // won't do anything until it runs the first time for loop_delay ms - that's OK.
-    
+  if (packet_check_timer > packet_check_delay) {
     // check for new packets coming in from transmitters on Serial2
     packet_list->get_new_packets();
+    packet_check_timer = 0;
+  }
 
-    // read current bme280 data and add/update its packets in the list
-    if (bme280_timer > bme280_update_delay) {
-      packet_list->update_BME280_packets();
-      bme280_timer = 0;
-    }
+  // read current bme280 data and add/update its packets in the list
+  if (bme280_timer > bme280_update_delay) {
+    packet_list->update_BME280_packets();
+    bme280_timer = 0;
+  }
 
-    if (web_update_timer > web_update_delay) {
-      ui->turnOnLed();
-      ui->update_status_line("Transmitting to web");
-      if (net->transmit_to_web()) {
-        last_web_update = millis();
-        packet_list->update_web_update_packet(last_web_update);
-      }
-      web_update_timer = 0;
-      ui->turnOFFLed();
-      ui->update_status_line("Waiting for data");
+  if (web_update_timer > web_update_delay) {
+    // BAS: move LED and status line control inside transmit_to_web when Internet class gets a UI pointer
+    ui->turnOnLed();
+    ui->update_status_line("Transmitting to web");
+    if (net->transmit_to_web()) {
+      last_web_update = millis();
+      packet_list->update_web_update_packet(last_web_update);
     }
+    web_update_timer = 0;
+    ui->turnOFFLed();
+    ui->update_status_line("Waiting for data");
+  }
 
-    if (packet_display_timer > packet_display_interval) {
-      if (packet_list->packet_list_not_empty()) {
-        ui->display_one_packet(packet_list->advance_one_packet());
-        packet_display_timer = 0;
-      }
+  if (packet_display_timer > packet_display_interval) {
+    if (packet_list->packet_list_not_empty()) {
+      ui->display_one_packet(packet_list->advance_one_packet());
+      packet_display_timer = 0;
     }
-    
-    loop_timer = 0;
   }
 } // loop()
-
