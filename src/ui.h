@@ -7,7 +7,6 @@
 #include "packet_list.h"
 #include <Adafruit_SSD1306.h>
 #include "alarm.h"
-#include "internet.h"
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -33,7 +32,6 @@ class UI {
 private:
     Adafruit_SSD1306* display_ = NULL;
     Alarm* alarm_;
-    Internet* net_ = NULL;
     uint8_t blue_led_pin_;
     uint8_t buzzer_pin_;
 
@@ -42,7 +40,6 @@ public:
     UI(uint8_t blue_led_pin, uint8_t buzzer_pin) : blue_led_pin_{blue_led_pin}, buzzer_pin_{buzzer_pin} {
         display_ = new Adafruit_SSD1306(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
         alarm_ = new Alarm(buzzer_pin_);
-        net_ = new Internet();
         pinMode(blue_led_pin, OUTPUT);
         digitalWrite(blue_led_pin, LOW);
         pinMode(LED_BUILTIN, OUTPUT);
@@ -156,16 +153,16 @@ public:
     /**
      * @brief Display the status just before connecting to wifi.
      */
-    void before_connect_to_wifi_screen() {
+    void before_connect_to_wifi_screen(String ssid) {
         update_status_line("Connecting to:");
-        update_status_line(net_->get_ssid());
+        update_status_line(ssid);
     }
 
     /**
      * @brief Display the status just after connecting to wifi.
      */
-    void after_connect_to_wifi_screen(String local_ip) {
-        if (net_->connected_to_wifi()) {  
+    void after_connect_to_wifi_screen(bool connected_to_wifi, String local_ip) {
+        if (connected_to_wifi) {  
             update_status_line("Connected to:");
             update_status_line(local_ip, 3);
             update_status_line("Waiting for data", 0);

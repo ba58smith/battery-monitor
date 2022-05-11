@@ -28,6 +28,7 @@ uint8_t buzzer_pin = 4;
 uint64_t packet_check_delay = 500;
 uint64_t web_update_delay = 660000;    // every 11:00
 uint64_t bme280_update_delay = 600000; // every 10:00
+bool first_run = true;
 uint64_t packet_display_interval = 3500; // every 3.5 seconds
 uint64_t last_web_update = millis(); // to avoid an alarm until the first one is sent
 
@@ -40,11 +41,11 @@ auto* lora = new ReyaxLoRa();
 
 auto* ui = new UI(blue_led_pin, buzzer_pin);
 
+auto* net = new Internet(ui);
+
 auto* bme280 = new Adafruit_BME280();
 
 auto* packet_list = new PacketList(ui, bme280);
-
-auto* net = new Internet();
 
 void setup() {
   // For Serial Monitor display of debug messages
@@ -67,10 +68,10 @@ void setup() {
   ui->prepare_display();
 
   // Connect to wifi
-  ui->before_connect_to_wifi_screen();
+  ui->before_connect_to_wifi_screen(net->get_ssid());
   net->connect_to_wifi(); //BAS: replace this with AdafruitIO::connect(). I need to call that command at some point,
   // and the first thing it does is disconnect from wifi, then re-connect.
-  ui->after_connect_to_wifi_screen(WiFi.localIP().toString());
+  ui->after_connect_to_wifi_screen(net->connected_to_wifi(), net->get_ip());
 
 } // setup()
 
@@ -83,22 +84,19 @@ void loop() {
   }
 
   // read current bme280 data and add/update its packets in the list
-  if (bme280_timer > bme280_update_delay) {
+  if (first_run ||  bme280_timer > bme280_update_delay) {
     packet_list->update_BME280_packets();
     bme280_timer = 0;
+    first_run = false;
   }
 
   if (web_update_timer > web_update_delay) {
     // BAS: move LED and status line control inside transmit_to_web when Internet class gets a UI pointer
-    ui->turnOnLed();
-    ui->update_status_line("Transmitting to web");
     if (net->transmit_to_web()) {
       last_web_update = millis();
       packet_list->update_web_update_packet(last_web_update);
     }
     web_update_timer = 0;
-    ui->turnOFFLed();
-    ui->update_status_line("Waiting for data");
   }
 
   if (packet_display_timer > packet_display_interval) {

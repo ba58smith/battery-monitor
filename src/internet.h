@@ -5,6 +5,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include "config.h"
+#include "ui.h"
 
 /**
  * @brief Class that manages all connections to, and interactions with, the Internet.
@@ -15,6 +16,7 @@ class Internet {
 private:
     const char* wifi_ssid_ = SSID; //"KeyAlmostWest";
     const char* wifi_pw_ = PASSWORD; //"sfaesfae";
+    UI* ui_;
     String jims_website_url_ = "http://www.totalcareprog.com/cgi-bin/butchmonitor_save.php";
 
 public:
@@ -22,11 +24,7 @@ public:
     /**
      * @brief Construct a new Internet object.
      */
-    
-    // BAS: add back after figuring out how to make UI and Internet point to each other
-    // Internet(UI* ui) : ui_{ui} {}
-    // and remove this one:
-    Internet() {}
+    Internet(UI* ui) : ui_{ui} {}
 
     /**
      * @brief Called during setup() and by transmitToWeb if necessary.
@@ -54,8 +52,6 @@ public:
     // BAS: if I start sending data to Arduino IO, this will go away.
     // But keep it during the transition.
     bool transmit_to_web() {
-        // BAS: add back after figuring out how to make UI and Internet point to each other
-        // ui_->turnOnLed(); // both LED's
         Serial.println("Transmitting to Jim's website");
         bool success = false;
         if (WiFi.status() != WL_CONNECTED) {
@@ -63,6 +59,9 @@ public:
             connect_to_wifi();
         }
         else {
+            
+            ui_->turnOnLed();
+            ui_->update_status_line("Transmitting to web");
             Serial.println("Connected to wifi");
             HTTPClient http;
             String serverPath = jims_website_url_ + "?battery1=" + String(battery1, 2) 
@@ -86,8 +85,8 @@ public:
             // Free resources
             http.end();
         }
-        // BAS: add back after figuring out how to make UI and Internet point to each other
-        // ui_->turnOFFLed(); // both LED's
+        ui_->update_status_line("Waiting for data");
+        ui_->turnOFFLed(); // both LED's
         return success;
 
     } // end transmit to web
@@ -95,6 +94,10 @@ public:
 
     String get_ssid() {
         return wifi_ssid_;
+    }
+
+    String get_ip() {
+        return WiFi.localIP().toString();
     }
 
     bool connected_to_wifi() {
