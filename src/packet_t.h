@@ -16,6 +16,7 @@ struct Packet_t {
         int8_t RSSI = 0;
         int8_t SNR = 0;
         uint32_t timestamp = 0;
+        bool sent_to_influx = false;
 };
 
 typedef std::list<Packet_t>::iterator Packet_it_t;

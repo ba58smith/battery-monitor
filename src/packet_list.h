@@ -184,6 +184,7 @@ public:
        packet->RSSI = 0;
        packet->SNR = 0;
        packet->timestamp = 0;
+       packet->sent_to_influx = false;
     }
    
     /**
@@ -231,6 +232,7 @@ public:
                    it->RSSI = packet->RSSI;
                    it->SNR = packet->SNR;
                    it->timestamp = packet->timestamp;
+                   it->sent_to_influx = false;
                    message_found = true;
                    Serial.println("Updating packet: " + packet->data_source + " " + packet->data_name);
                    break;
@@ -346,6 +348,22 @@ public:
 
     uint8_t packet_list_not_empty() {
        return !packets_.empty();
+    }
+
+    /**
+     * @brief create an iterator to the beginning of PacketList
+     */
+    
+    Packet_it_t get_packets_begin() {
+        return packets_.begin();
+    }
+
+    /**
+     * @brief create an iterator to the end of PacketList
+     */
+    
+    Packet_it_t get_packets_end() {
+        return packets_.end();
     }
 
 }; // class PacketList
