@@ -1,5 +1,9 @@
-#ifndef _SECRET_CONFIG_H_
-#define _SECRET_CONFIG_H_
+#ifndef _DEFAULT_CONFIG_H_
+#define _DEFAULT_CONFIG_H_
+
+// Edit all of the #define statements in this file to use YOUR
+// sensitive information. Then see the comment at the top of
+// the config.h file that tells how to use this file.
 
 // Network must be the same for all of your units to communicate w/ each other.
 // Valid network ID's are 1 - 15: DO NOT USE network ID 0.
@@ -30,4 +34,4 @@ const char *PASSWORD = "YourWifiPasswordHere";
 #define INFLUXDB_USER "YourDBUserHere"
 #define INFLUXDB_PASSWORD "YourDBPasswordHere"
 
-#endif // _SECRET_CONFIG_H_
+#endif // _DEFAULT_CONFIG_H_

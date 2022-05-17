@@ -1,7 +1,11 @@
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
+// Comment out the "secret_config.h" line, and UN-comment
+// the "default_config.h" line. Then edit the default_config.h
+// file to include all of your sensitive information.
 #include "secret_config.h"
+// #include "default_config.h"
 
 // BAS: these can go when I stop sending to Jim's website
 uint16_t yourTemp = 80;
