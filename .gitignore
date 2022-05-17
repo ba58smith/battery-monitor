@@ -4,3 +4,4 @@
 .vscode/launch.json
 .vscode/ipch
 .vscode/extensions.json
+src/secret_config.h
