@@ -124,9 +124,9 @@ public:
        display_->setCursor(0, line1);
        display_->println("Boat Monitor");
        display_->setCursor(0, line2);
-       display_->println("Ver 2.00");
+       display_->println("Ver 2.10");
        display_->setCursor(0, line3);
-       display_->print("1 May, 2020");
+       display_->print("17 May, 2022");
        display_->display();
        update_status_line("JimBooth's", 5, 2);
     }
