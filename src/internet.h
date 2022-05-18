@@ -33,10 +33,10 @@ public:
     }
 
     /**
-     * @brief Called during setup() and by transmitToWeb if necessary.
+     * @brief Called during setup() and before sending data online, if necessary.
      */
 
-    void connect_to_wifi() {
+    bool connect_to_wifi() {
         uint8_t attempts = 0;
         Serial.print("Connecting to wifi ");
         WiFi.begin(wifi_ssid_, wifi_pw_);
@@ -49,23 +49,25 @@ public:
         if (WiFi.status() != WL_CONNECTED) {
             Serial.println("Not connected to wifi");
             delay(500);
+            return false;
         }
         else {
             Serial.println("Connected to " + WiFi.localIP().toString());
+            return true;
         }
     }
 
-    // BAS: if I start sending data to Arduino IO, this will go away.
-    // But keep it during the transition.
+
     bool transmit_to_web() {
         Serial.println("Transmitting to Jim's website");
-        bool success = false;
+        bool http_success = false;
         if (WiFi.status() != WL_CONNECTED) {
             Serial.println("wifi not connected");
-            connect_to_wifi();
+            if (!connect_to_wifi()) {
+                return false;
+            }
         }
         else {
-            
             ui_->turnOnLed();
             ui_->update_status_line("Transmitting to web");
             Serial.println("Connected to wifi");
@@ -74,26 +76,22 @@ public:
                               + "&battery2=" + String(battery2, 2) + "&battery3=" + String(battery3) 
                               + "&temp=" + String(yourTemp) + "&humidity=" + String(yourHumidity) 
                               + "&pressure=" + String(yourPressure, 2);
-            // Your Domain name with URL path or IP address with path
             http.begin(serverPath.c_str());
-            // Send HTTP GET request //BAS: save httpResponseCode as a data member - Internet::last_reponse_code_ and add to packet&display
             int httpResponseCode = http.GET();
             if (httpResponseCode > 0) {
-                Serial.print("HTTP Response code: ");
-                Serial.println(httpResponseCode);
+                Serial.println("HTTP Response code: " + httpResponseCode);
                 Serial.println(http.getString());
-                success = true;
+                http_success = true;
             }
             else {
-                Serial.print("Error code: ");
-                Serial.println(httpResponseCode);
+                Serial.println("Error code: " + httpResponseCode);
             }
             // Free resources
             http.end();
         }
         ui_->update_status_line("Waiting for data");
         ui_->turnOFFLed(); // both LED's
-        return success;
+        return http_success;
 
     } // end transmit to web
 
@@ -101,9 +99,10 @@ public:
      * @brief Sends one datapoint to InfluxDB 
      */
 
-    bool one_packet_to_influx(String data_source, String data_name, String data_value, uint16_t alarm_code = 0,
+    bool send_one_packet_to_influx(String data_source, String data_name, String data_value, uint16_t alarm_code = 0,
                              int8_t RSSI = 0, int8_t SNR = 0) {
         Serial.println("Sending one new packet to InfluxDB");
+        ui_->update_status_line("Sending to InfluxDB");
         Point packet("packets");
         packet.addTag("source", data_source);
         packet.addTag("name", data_name);
@@ -117,37 +116,46 @@ public:
         packet.addField("rssi", RSSI);
         packet.addField("snr", SNR);
         if (!influxdb_->writePoint(packet)) {
-            Serial.print("InfluxDB write failed: ");
-            Serial.println(influxdb_->getLastErrorMessage());
+            Serial.println("InfluxDB write failed: " + influxdb_->getLastErrorMessage());
+            ui_->update_status_line("InfluxDB write failed");
+            delay(1000);
             return false;
         }
         else {
+            ui_->update_status_line("Waiting for data");
+            Serial.println("InfluxDB write successful");
             return true;
         }
     }
 
     /**
-     * @brief sends all unsent packets to InfluxDB 
+     * @brief sends all unsent packets to InfluxDB
+     * @param first_packet An iterator to PacketList::packets.begin()
+     * @param end_of_packets An iterator to PacketList::packets.end()
+     * @return true if successful, false if unsucessful for any reason
      */
 
-    void send_packets_to_influx(Packet_it_t first_packet, Packet_it_t end_of_packets) {
+    bool send_packets_to_influx(Packet_it_t first_packet, Packet_it_t end_of_packets) {
         if (WiFi.status() != WL_CONNECTED) {
             Serial.println("wifi not connected");
-            connect_to_wifi();
+            if (!connect_to_wifi()) {
+                return false;
+            }
         }
         for (Packet_it_t it = first_packet; it != end_of_packets; ++it) {
             if (!it->sent_to_influx) {
-                bool successful = one_packet_to_influx(it->data_source, it->data_name, it->data_value, it->alarm_code,
-                                    it->RSSI, it->SNR);
-                if (successful) {
+                if (send_one_packet_to_influx(it->data_source, it->data_name, it->data_value, it->alarm_code,
+                                    it->RSSI, it->SNR)) {
+                    Serial.println("Packet successfully sent to InfluxDB: " + it->data_source + " " + it->data_name);
                     it->sent_to_influx = true;
                 }
                 else {    
-                    Serial.println("one_packet_to_influx() failed");
-                    break;
+                    Serial.println("send_one_packet_to_influx() failed");
+                    return false;
                 }
             }
         }
+        return true;
     }
 
     String get_ssid() {

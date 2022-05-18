@@ -318,7 +318,7 @@ public:
     * @param last_successful_update - updated every time the web update is successful
     */
 
-    void update_web_update_packet(uint64_t last_successful_update) { //String source, String name_of_data, String value, int16_t alarm
+    void update_web_update_packet(uint64_t last_successful_update) {
        Serial.println("Updating web packet");
        int16_t alarm = 0;
        String source = "Web";

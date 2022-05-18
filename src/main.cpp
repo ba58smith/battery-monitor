@@ -71,8 +71,7 @@ void setup() {
 
   // Connect to wifi
   ui->before_connect_to_wifi_screen(net->get_ssid());
-  net->connect_to_wifi(); //BAS: replace this with AdafruitIO::connect(). I need to call that command at some point,
-  // and the first thing it does is disconnect from wifi, then re-connect.
+  net->connect_to_wifi();
   ui->after_connect_to_wifi_screen(net->connected_to_wifi(), net->get_ip());
 
 } // setup()
@@ -93,7 +92,6 @@ void loop() {
   }
 
   if (web_update_timer > web_update_delay) {
-    // BAS: move LED and status line control inside transmit_to_web when Internet class gets a UI pointer
     if (net->transmit_to_web()) {
       last_web_update = millis();
       packet_list->update_web_update_packet(last_web_update);
