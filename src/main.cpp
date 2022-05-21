@@ -18,7 +18,7 @@ float battery3 = 0.0; // Boat
 
 // If you change the NETWORK_ID or BASE_STATION_ADDRESS (in config.h):
 // Un-comment "#define LORA_SETUP_REQUIRED", upload and run once, then
-// comment out "#define LORA_SETUP_REQUIRED".
+// comment out "#define LORA_SETUP_REQUIRED" and upload.
 // That will prevent writing the NETWORK_ID and BASE_STATION_ADDRESS to EEPROM every run.
 //#define LORA_SETUP_REQUIRED
 
