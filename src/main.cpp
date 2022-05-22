@@ -74,6 +74,8 @@ void setup() {
   net->connect_to_wifi();
   ui->after_connect_to_wifi_screen(net->connected_to_wifi(), net->get_ip());
 
+  net->send_email("This should appear as the message.");
+
 } // setup()
 
 void loop() {

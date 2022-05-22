@@ -5,6 +5,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <InfluxDbClient.h>
+#include <EMailSender.h>
 #include "config.h"
 #include "ui.h"
 #include "packet_list.h"
@@ -20,6 +21,10 @@ private:
     const char* wifi_pw_ = PASSWORD; //"sfaesfae";
     UI* ui_;
     InfluxDBClient* influxdb_;
+    EMailSender* email_sender_;
+    String email_recipient_ = "ba58smith@gmail.com";
+    EMailSender::EMailMessage email_message_;
+    EMailSender::Response email_response_;
     String jims_website_url_ = "http://www.totalcareprog.com/cgi-bin/butchmonitor_save.php";
 
 public:
@@ -30,6 +35,8 @@ public:
     Internet(UI* ui) : ui_{ui} {
         influxdb_ = new InfluxDBClient(INFLUXDB_URL, INFLUXDB_DB_NAME);
         influxdb_->setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);
+        email_sender_ = new EMailSender("ba58smith@gmail.com", "lsqxrdaljhluazgj");
+        email_message_.subject = "Message from LoRa Receiver";
     }
 
     /**
@@ -168,6 +175,20 @@ public:
 
     bool connected_to_wifi() {
         return WiFi.status() == WL_CONNECTED;
+    }
+
+    /**
+     * @brief Sends a text-only email. Used to notify user of an alarm
+     * condition that has not cleared in a timely manner.
+     */
+
+    void send_email(String message_text) {
+        email_message_.message = message_text;
+        email_response_ = email_sender_->send(email_recipient_, email_message_);
+        Serial.println("Sending email");
+        Serial.println("email_response_.status: " + email_response_.status);
+        Serial.println("email_response_.code: " + email_response_.code);
+        Serial.println("email_response_.desc: " + email_response_.desc);
     }
 
 }; // class Internet
