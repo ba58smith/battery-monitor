@@ -22,7 +22,7 @@ private:
     UI* ui_;
     InfluxDBClient* influxdb_;
     EMailSender* email_sender_;
-    String email_recipient_ = "ba58smith@gmail.com";
+    String email_recipient_ = "3172130876@msg.fi.google.com";
     EMailSender::EMailMessage email_message_;
     EMailSender::Response email_response_;
     String jims_website_url_ = "http://www.totalcareprog.com/cgi-bin/butchmonitor_save.php";
