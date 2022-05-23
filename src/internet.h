@@ -125,8 +125,7 @@ public:
         packet.addField("snr", SNR);
         if (!influxdb_->writePoint(packet)) {
             Serial.println("InfluxDB write failed: " + influxdb_->getLastErrorMessage());
-            ui_->update_status_line("InfluxDB write failed");
-            delay(1000);
+            ui_->update_status_line("InfluxDB write failed", 2);
             return false;
         }
         else {
@@ -188,7 +187,7 @@ public:
     void send_alarm_email(Packet_it_t first_packet, Packet_it_t end_of_packets) {
         // create a time_t (which is the number of seconds since 1/1/1990) and set it to the current time
         Serial.println("Looking for alarms that need an email sent");
-        ui_->update_status_line("Looking 4 old alarms");
+        ui_->update_status_line("Looking 4 old alarms", 2);
         time_t now;
         time(&now);
         for (Packet_it_t it = first_packet; it != end_of_packets; ++it) {
@@ -197,8 +196,8 @@ public:
                 String current_time_str = String(current_time);
                 char* first_alarm_date = ctime(&it->first_alarm_time);
                 String first_alarm_date_str = String(first_alarm_date);
-                String message_text = current_time_str + "\n " + it->data_source + " " + it->data_name + ": " + it->data_value 
-                                    + "\n(Alarm since\n" + first_alarm_date_str +")";
+                String message_text = current_time_str + "\n" + it->data_source + " " + it->data_name + ": " + it->data_value 
+                                    + "\nAlarm condition began on\n" + first_alarm_date_str;
                 Serial.println(message_text);
                 email_message_.message = message_text;
                 email_response_ = email_sender_->send(email_recipient_, email_message_);
@@ -212,7 +211,6 @@ public:
                 }
             }
         }
-        delay(2000); // leave the current status line for a few seconds
         ui_->update_status_line("Waiting for data");
         
     }

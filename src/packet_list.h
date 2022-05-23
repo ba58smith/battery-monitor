@@ -119,6 +119,8 @@ public:
                        new_packet.alarm_code = temp_str.toInt();
                        if (new_packet.alarm_code > 0) {
                            time(&new_packet.first_alarm_time); // set to current time
+                           char* date = ctime(&new_packet.first_alarm_time);
+                           Serial.println("First alarm time: " + String(date));
                        }
                    }
                    // this is the last bit of data in the <Data> portion, so we go back to "," as the separator
@@ -247,7 +249,7 @@ public:
                        it->alarm_has_sounded = false;
                        it->first_alarm_time = packet->first_alarm_time;
                    }
-                   else if (!packet->alarm_code) { // there is no alarm
+                   if (!packet->alarm_code) { // there is no alarm
                        it->first_alarm_time = 0;
                    }
                    it->alarm_code = packet->alarm_code;
@@ -312,12 +314,11 @@ public:
     }
 
     /**
-    * @brief Create a string of the current date and time 
+    * @brief Create a string of the current time (HH:MM am/pm)
     */
 
     String get_current_time() {
        struct tm timeinfo;
-       configTime(-18000, 3600, "pool.ntp.org"); // Connect to NTP server with -5 TZ offset (-18000), 1 hr DST offset (3600).
        if (!getLocalTime(&timeinfo)) {
            Serial.println("Failed to obtain time");
            return "Invalid time";

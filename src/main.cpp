@@ -76,6 +76,8 @@ void setup() {
   net->connect_to_wifi();
   ui->after_connect_to_wifi_screen(net->connected_to_wifi(), net->get_ip());
 
+  configTime(-18000, 3600, "pool.ntp.org"); // Connect to NTP server with -5 TZ offset (-18000), 1 hr DST offset (3600).
+
 } // setup()
 
 void loop() {
