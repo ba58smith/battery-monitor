@@ -25,7 +25,6 @@ private:
     String email_recipient_ = "3172130876@msg.fi.google.com";
     EMailSender::EMailMessage email_message_;
     EMailSender::Response email_response_;
-    String jims_website_url_ = "http://www.totalcareprog.com/cgi-bin/butchmonitor_save.php";
 
 public:
     
@@ -65,43 +64,6 @@ public:
         }
     }
 
-
-    bool transmit_to_web() {
-        Serial.println("Transmitting to Jim's website");
-        bool http_success = false;
-        if (WiFi.status() != WL_CONNECTED) {
-            Serial.println("wifi not connected");
-            if (!connect_to_wifi()) {
-                return false;
-            }
-        }
-        else {
-            ui_->turnOnLed();
-            ui_->update_status_line("Transmitting to web");
-            Serial.println("Connected to wifi");
-            HTTPClient http;
-            String serverPath = jims_website_url_ + "?battery1=" + String(battery1, 2) 
-                              + "&battery2=" + String(battery2, 2) + "&battery3=" + String(battery3) 
-                              + "&temp=" + String(yourTemp) + "&humidity=" + String(yourHumidity) 
-                              + "&pressure=" + String(yourPressure, 2);
-            http.begin(serverPath.c_str());
-            int httpResponseCode = http.GET();
-            if (httpResponseCode > 0) {
-                Serial.println("HTTP Response code: " + httpResponseCode);
-                Serial.println(http.getString());
-                http_success = true;
-            }
-            else {
-                Serial.println("Error code: " + httpResponseCode);
-            }
-            // Free resources
-            http.end();
-        }
-        ui_->update_status_line("Waiting for data");
-        ui_->turnOFFLed(); // both LED's
-        return http_success;
-
-    } // end transmit to web
 
     /**
      * @brief Sends one datapoint to InfluxDB 

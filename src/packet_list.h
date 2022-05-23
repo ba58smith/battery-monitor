@@ -62,7 +62,7 @@ public:
        String temp_str = "";
        
        while (Serial2.available()) {
-           // BAS: If there are two packets in the Serial2 buffer, make sure the second one
+           // If there are two packets in the Serial2 buffer, make sure the second one
            // starts at the right place. If it doesn't find a "+", it won't find a valid packet.
            String init_str = Serial2.readStringUntil('+');
            Serial.println("New data coming in");
@@ -162,14 +162,7 @@ public:
                                             new_packet.data_value), 5);
                     ui_->update_status_line("Waiting for data");
 
-                   // BAS: remove this if() when I stop sending to Jim's website
-                   if (new_packet.data_source == "Bessie") {
-                       battery1 = new_packet.data_value.toFloat();
-                   }
-                   else if (new_packet.data_source == "Boat") {
-                       battery3 = new_packet.data_value.toFloat();
-                   }
-                   ui_->turnOFFLed();
+                    ui_->turnOFFLed();
                }
            }
        }
@@ -285,8 +278,6 @@ public:
        if (data <= TEMP_ALARM_RANGE_LOWER || data >= TEMP_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
-       // BAS: get rid of next line when you stop updating Jim's website
-       yourTemp = data;
        create_generic_packet("BME280", "Temp (F)", String(data, 0), alarm, TEMP_ALARM_EMAIL_THRESHOLD);
        alarm = 0;
        
@@ -295,8 +286,6 @@ public:
        if (data <= PRESSURE_ALARM_RANGE_LOWER || data >= PRESSURE_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
-       // BAS: get rid of next line when you stop updating Jim's website
-       yourPressure = data;
        create_generic_packet("BME280", "Pressure (\"hg)", String(data, 2), alarm, PRESSURE_ALARM_EMAIL_THRESHOLD);
        alarm = 0;
 
@@ -305,8 +294,6 @@ public:
        if (data <= HUMIDITY_ALARM_RANGE_LOWER || data >= HUMIDITY_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
-       // BAS: get rid of next line when you stop updating Jim's website
-       yourHumidity = data;
        create_generic_packet("BME280", "Humidity", String(data, 0), alarm, HUMIDITY_ALARM_EMAIL_THRESHOLD);
        alarm = 0;
        ui_->turnOFFLed();

@@ -1,10 +1,5 @@
 // Base station (receiver) code
 
-// BAS: get rid of these when no longer sending to Jim's website
-float battery1 = 0.0; // Bess1
-float battery2 = 0.0; // Bess2
-float battery3 = 0.0; // Boat
-
 #include <Arduino.h>
 #include "config.h"
 #include "packet_t.h"
@@ -26,16 +21,16 @@ uint8_t blue_led_pin = 26;
 uint8_t buzzer_pin = 4;
  
 uint64_t packet_check_delay = 500;
-uint64_t web_update_delay = 660000;    // every 11:00
+//uint64_t web_update_delay = 660000;    // every 11:00
 uint64_t influx_update_delay = 5000;   // every 5 seconds
 uint64_t bme280_update_delay = 600000; // every 10:00
 uint64_t alarm_email_delay = 300000;   // every 5:00
 bool first_run = true;
 uint64_t packet_display_interval = 3500; // every 3.5 seconds
-uint64_t last_web_update = millis(); // to avoid an alarm until the first one is sent
+//uint64_t last_web_update = millis(); // to avoid an alarm until the first one is sent
 
 elapsedMillis packet_check_timer;
-elapsedMillis web_update_timer;
+//elapsedMillis web_update_timer;
 elapsedMillis bme280_timer;
 elapsedMillis packet_display_timer;
 elapsedMillis influx_update_timer;
@@ -95,6 +90,7 @@ void loop() {
     first_run = false;
   }
 
+  /*
   if (web_update_timer > web_update_delay) {
     if (net->transmit_to_web()) {
       last_web_update = millis();
@@ -102,6 +98,7 @@ void loop() {
     }
     web_update_timer = 0;
   }
+  */
 
   if (packet_display_timer > packet_display_interval) {
     if (packet_list->packet_list_not_empty()) {

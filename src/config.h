@@ -7,11 +7,6 @@
 #include "secret_config.h"
 // #include "default_config.h"
 
-// BAS: these can go when I stop sending to Jim's website
-uint16_t yourTemp = 80;
-float yourPressure = 29.92;
-uint16_t yourHumidity = 50;
-
 #define BASE_STATION
 
 // Un-comment and change the baud rate below to change it.
