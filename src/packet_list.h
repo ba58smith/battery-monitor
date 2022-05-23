@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include <list>
-#include "time.h"
 #include "packet_t.h"
 #include "config.h"
 #include "alarm.h"
@@ -110,8 +109,7 @@ public:
                        Serial.println("Error reading data_value from Serial2.");
                        return false;
                    }
-                   // this is the last bit of data in the <Data> portion, so we go back to "," as the separator
-                   temp_str = Serial2.readStringUntil(',');
+                   temp_str = Serial2.readStringUntil('%');
                    if (temp_str.length() == 0) {
                        Serial.println("Error reading alarm_code from Serial2.");
                        return false;
@@ -119,6 +117,21 @@ public:
                    else {
                        Serial.println("Alarm code = " + temp_str);
                        new_packet.alarm_code = temp_str.toInt();
+                       if (new_packet.alarm_code > 0) {
+                           time(&new_packet.first_alarm_time); // set to current time
+                           char* date = ctime(&new_packet.first_alarm_time);
+                           Serial.println("First alarm time: " + String(date));
+                       }
+                   }
+                   // this is the last bit of data in the <Data> portion, so we go back to "," as the separator
+                   temp_str = Serial2.readStringUntil(',');
+                   if (temp_str.length() == 0) {
+                       Serial.println("Error reading alarm_email_threshold from Serial2.");
+                       return false;
+                   }
+                   else {
+                       Serial.println("Alarm email threshold = " + temp_str);
+                       new_packet.alarm_email_threshold = temp_str.toInt();
                    }
                    temp_str = Serial2.readStringUntil(',');
                    if (temp_str.length() == 0) {
@@ -161,10 +174,10 @@ public:
            }
        }
        if (new_packet_received) {
-           return "1 or more new packets rec'd";
+           return true;
        }
        else {
-           return "";
+           return false;
        }
     }
 
@@ -181,6 +194,8 @@ public:
        packet->data_value = "";
        packet->alarm_code = 0;
        packet->alarm_has_sounded = false;
+       packet->first_alarm_time = 0;
+       packet->alarm_email_threshold = 0;
        packet->RSSI = 0;
        packet->SNR = 0;
        packet->timestamp = 0;
@@ -194,15 +209,20 @@ public:
     * @param name_of_data  "Voltage", "Water temp", etc.
     * @param value Obvious
     * @param alarm Alarm code
+    * @param alarm_email_threshold # of minutes an alarm condition must exist before an email is sent
     */
 
-    void create_generic_packet(String source, String name_of_data, String value, int16_t alarm) {
+    void create_generic_packet(String source, String name_of_data, String value, int16_t alarm, uint16_t alarm_threshold = 0) {
        Packet_t new_packet;
        new_packet.unique_id = source + name_of_data;
        new_packet.data_source = source;
        new_packet.data_name = name_of_data;
        new_packet.data_value = value;
        new_packet.alarm_code = alarm;
+       if (new_packet.alarm_code > 0) {
+           time(&new_packet.first_alarm_time); // sets first_alarm_time to current time
+       }
+       new_packet.alarm_email_threshold = alarm_threshold;
        new_packet.timestamp = millis();
        add_packet_to_list(&new_packet);
     }
@@ -227,6 +247,10 @@ public:
                    it->data_value = packet->data_value;
                    if (!it->alarm_code && packet->alarm_code) { // alarm code is going from 0 to non-zero
                        it->alarm_has_sounded = false;
+                       it->first_alarm_time = packet->first_alarm_time;
+                   }
+                   if (!packet->alarm_code) { // there is no alarm
+                       it->first_alarm_time = 0;
                    }
                    it->alarm_code = packet->alarm_code;
                    it->RSSI = packet->RSSI;
@@ -263,7 +287,7 @@ public:
        }
        // BAS: get rid of next line when you stop updating Jim's website
        yourTemp = data;
-       create_generic_packet("BME280", "Temp (F)", String(data, 0), alarm);
+       create_generic_packet("BME280", "Temp (F)", String(data, 0), alarm, TEMP_ALARM_EMAIL_THRESHOLD);
        alarm = 0;
        
        data = (bme280_->readPressure() * 0.0002953); // convert from Pascals to inches of mercury
@@ -273,7 +297,7 @@ public:
        }
        // BAS: get rid of next line when you stop updating Jim's website
        yourPressure = data;
-       create_generic_packet("BME280", "Pressure (\"hg)", String(data, 2), alarm);
+       create_generic_packet("BME280", "Pressure (\"hg)", String(data, 2), alarm, PRESSURE_ALARM_EMAIL_THRESHOLD);
        alarm = 0;
 
        data = (bme280_->readHumidity());
@@ -283,19 +307,18 @@ public:
        }
        // BAS: get rid of next line when you stop updating Jim's website
        yourHumidity = data;
-       create_generic_packet("BME280", "Humidity", String(data, 0), alarm);
+       create_generic_packet("BME280", "Humidity", String(data, 0), alarm, HUMIDITY_ALARM_EMAIL_THRESHOLD);
        alarm = 0;
        ui_->turnOFFLed();
        ui_->update_status_line("Waiting for data");
     }
 
     /**
-    * @brief Create a string of the current date and time 
+    * @brief Create a string of the current time (HH:MM am/pm)
     */
 
     String get_current_time() {
        struct tm timeinfo;
-       configTime(-18000, 3600, "pool.ntp.org"); // Connect to NTP server with -5 TZ offset (-18000), 1 hr DST offset (3600).
        if (!getLocalTime(&timeinfo)) {
            Serial.println("Failed to obtain time");
            return "Invalid time";

@@ -27,8 +27,9 @@ uint8_t buzzer_pin = 4;
  
 uint64_t packet_check_delay = 500;
 uint64_t web_update_delay = 660000;    // every 11:00
-uint64_t influx_update_delay = 5000;  // every 5 seconds
+uint64_t influx_update_delay = 5000;   // every 5 seconds
 uint64_t bme280_update_delay = 600000; // every 10:00
+uint64_t alarm_email_delay = 300000;   // every 5:00
 bool first_run = true;
 uint64_t packet_display_interval = 3500; // every 3.5 seconds
 uint64_t last_web_update = millis(); // to avoid an alarm until the first one is sent
@@ -38,6 +39,7 @@ elapsedMillis web_update_timer;
 elapsedMillis bme280_timer;
 elapsedMillis packet_display_timer;
 elapsedMillis influx_update_timer;
+elapsedMillis alarm_email_timer;
 
 auto* lora = new ReyaxLoRa();
 
@@ -73,6 +75,8 @@ void setup() {
   ui->before_connect_to_wifi_screen(net->get_ssid());
   net->connect_to_wifi();
   ui->after_connect_to_wifi_screen(net->connected_to_wifi(), net->get_ip());
+
+  configTime(-18000, 3600, "pool.ntp.org"); // Connect to NTP server with -5 TZ offset (-18000), 1 hr DST offset (3600).
 
 } // setup()
 
@@ -111,5 +115,12 @@ void loop() {
     Packet_it_t it_end = packet_list->get_packets_end();
     net->send_packets_to_influx(it_begin, it_end);
     influx_update_timer = 0;
+  }
+
+  if (alarm_email_timer > alarm_email_delay) {
+    Packet_it_t it_begin = packet_list->get_packets_begin();
+    Packet_it_t it_end = packet_list->get_packets_end();
+    net->send_alarm_email(it_begin, it_end);
+    alarm_email_timer = 0;
   }
 } // loop()

@@ -5,6 +5,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <InfluxDbClient.h>
+#include <EMailSender.h>
 #include "config.h"
 #include "ui.h"
 #include "packet_list.h"
@@ -16,10 +17,14 @@
 class Internet {
 
 private:
-    const char* wifi_ssid_ = SSID; //"KeyAlmostWest";
-    const char* wifi_pw_ = PASSWORD; //"sfaesfae";
+    const char* wifi_ssid_ = SSID;
+    const char* wifi_pw_ = PASSWORD;
     UI* ui_;
     InfluxDBClient* influxdb_;
+    EMailSender* email_sender_;
+    String email_recipient_ = "3172130876@msg.fi.google.com";
+    EMailSender::EMailMessage email_message_;
+    EMailSender::Response email_response_;
     String jims_website_url_ = "http://www.totalcareprog.com/cgi-bin/butchmonitor_save.php";
 
 public:
@@ -30,6 +35,9 @@ public:
     Internet(UI* ui) : ui_{ui} {
         influxdb_ = new InfluxDBClient(INFLUXDB_URL, INFLUXDB_DB_NAME);
         influxdb_->setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);
+        email_sender_ = new EMailSender("ba58smith@gmail.com", "lsqxrdaljhluazgj");
+        email_message_.subject = "Message from LoRa Receiver";
+        email_message_.mime = MIME_TEXT_PLAIN;
     }
 
     /**
@@ -117,8 +125,7 @@ public:
         packet.addField("snr", SNR);
         if (!influxdb_->writePoint(packet)) {
             Serial.println("InfluxDB write failed: " + influxdb_->getLastErrorMessage());
-            ui_->update_status_line("InfluxDB write failed");
-            delay(1000);
+            ui_->update_status_line("InfluxDB write failed", 2);
             return false;
         }
         else {
@@ -168,6 +175,44 @@ public:
 
     bool connected_to_wifi() {
         return WiFi.status() == WL_CONNECTED;
+    }
+
+    /**
+     * @brief Sends a text-only email. Used to notify user of an alarm
+     * condition that has not cleared in a timely manner.
+     * @param first_packet An iterator to PacketList::packets.begin()
+     * @param end_of_packets An iterator to PacketList::packets.end()
+     */
+
+    void send_alarm_email(Packet_it_t first_packet, Packet_it_t end_of_packets) {
+        // create a time_t (which is the number of seconds since 1/1/1990) and set it to the current time
+        Serial.println("Looking for alarms that need an email sent");
+        ui_->update_status_line("Looking 4 old alarms", 2);
+        time_t now;
+        time(&now);
+        for (Packet_it_t it = first_packet; it != end_of_packets; ++it) {
+            if (it->first_alarm_time > 0 && it->first_alarm_time + (it->alarm_email_threshold * 60) < now) {
+                char* current_time = ctime(&now);
+                String current_time_str = String(current_time);
+                char* first_alarm_date = ctime(&it->first_alarm_time);
+                String first_alarm_date_str = String(first_alarm_date);
+                String message_text = current_time_str + "\n" + it->data_source + " " + it->data_name + ": " + it->data_value 
+                                    + "\nAlarm condition began on\n" + first_alarm_date_str;
+                Serial.println(message_text);
+                email_message_.message = message_text;
+                email_response_ = email_sender_->send(email_recipient_, email_message_);
+                Serial.println("Sending email");
+                Serial.println("email_response_.status: " + email_response_.status);
+                Serial.println("email_response_.code: " + email_response_.code);
+                Serial.println("email_response_.desc: " + email_response_.desc);
+                if (email_response_.code == 0) {
+                    it->first_alarm_time = 0; // so we don't keep sending the email, unless it's still in an
+                                              // alarm state for another alarm_email_threshold minutes.
+                }
+            }
+        }
+        ui_->update_status_line("Waiting for data");
+        
     }
 
 }; // class Internet
