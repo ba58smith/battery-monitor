@@ -313,28 +313,7 @@ public:
        ui_->update_status_line("Waiting for data");
     }
 
-    /**
-    * @brief Create a string of the current time (HH:MM am/pm)
-    */
-
-    String get_current_time() {
-       struct tm timeinfo;
-       if (!getLocalTime(&timeinfo)) {
-           Serial.println("Failed to obtain time");
-           return "Invalid time";
-       }
-       char time_buf[12];
-       strftime(time_buf, sizeof(time_buf), "%I:%M", &timeinfo);
-       if (timeinfo.tm_hour > 12) {
-           strcat(time_buf, " pm");
-       }
-       else {
-           strcat(time_buf, " am");
-       }
-       String current_time_string = time_buf;
-       return current_time_string;
-    }
-
+    
     /**
     * @brief Create or update the packet that tells when the last successful web update happened
     * 
@@ -346,7 +325,7 @@ public:
        int16_t alarm = 0;
        String source = "Web";
        String name_of_data = "Last update";
-       String value = get_current_time();
+       String value = ui_->get_current_time();
        if (millis() - last_successful_update > WEB_UPDATE_ALARM_AGE) {
            alarm = 333;
        }

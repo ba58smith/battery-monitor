@@ -185,19 +185,16 @@ public:
      */
 
     void send_alarm_email(Packet_it_t first_packet, Packet_it_t end_of_packets) {
-        // create a time_t (which is the number of seconds since 1/1/1990) and set it to the current time
         Serial.println("Looking for alarms that need an email sent");
         ui_->update_status_line("Looking 4 old alarms", 2);
+        // create a time_t (which is the number of seconds since 1/1/1970) and set it to the current time
         time_t now;
         time(&now);
         for (Packet_it_t it = first_packet; it != end_of_packets; ++it) {
             if (it->first_alarm_time > 0 && it->first_alarm_time + (it->alarm_email_threshold * 60) < now) {
-                char* current_time = ctime(&now);
-                String current_time_str = String(current_time);
-                char* first_alarm_date = ctime(&it->first_alarm_time);
-                String first_alarm_date_str = String(first_alarm_date);
-                String message_text = current_time_str + "\n" + it->data_source + " " + it->data_name + ": " + it->data_value 
-                                    + "\nAlarm condition began on\n" + first_alarm_date_str;
+                tm* first_alarm = localtime(&it->first_alarm_time);
+                String message_text = ui_->get_current_time() + "\n" + it->data_source + " " + it->data_name + ": " + it->data_value 
+                                    + "\nAlarm condition began on\n" + ui_->get_date_time_str(first_alarm);
                 Serial.println(message_text);
                 email_message_.message = message_text;
                 email_response_ = email_sender_->send(email_recipient_, email_message_);

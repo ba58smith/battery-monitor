@@ -211,9 +211,44 @@ public:
         alarm_->soundAlarm(duration, 1);
     }
 
+    /**
+    * @brief Create a string of the current time (HH:MM am/pm)
+    */
+
+    String get_current_time() {
+       struct tm timeinfo;
+       if (!getLocalTime(&timeinfo)) {
+           Serial.println("Failed to obtain time");
+           return "Invalid time";
+       }
+       char time_buf[12];
+       strftime(time_buf, sizeof(time_buf), "%I:%M", &timeinfo);
+       if (timeinfo.tm_hour > 12) {
+           strcat(time_buf, " pm");
+       }
+       else {
+           strcat(time_buf, " am");
+       }
+       String current_time_string = time_buf;
+       return current_time_string;
+    }
+
     void turnOnLed() {
         digitalWrite(LED_BUILTIN, HIGH);
         digitalWrite(blue_led_pin_, HIGH);
+    }
+
+    String get_date_time_str(tm* tm_to_convert) {
+        char time_buf[15];
+        strftime(time_buf, sizeof(time_buf), "%b %d @ %I:%M", tm_to_convert);
+        if (tm_to_convert->tm_hour > 12) {
+            strcat(time_buf, " pm");
+        }
+        else {
+            strcat(time_buf, " am");
+        }
+        String current_time_string = time_buf;
+        return current_time_string;
     }
 
     void turnOFFLed() {

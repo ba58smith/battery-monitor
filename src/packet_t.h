@@ -14,7 +14,7 @@ struct Packet_t {
         String data_value = "";
         int16_t alarm_code = 0;
         bool alarm_has_sounded = false;
-        time_t first_alarm_time = 0;  // time_t is seconds since 1/1/1990
+        time_t first_alarm_time = 0;  // time_t is seconds since 1/1/1970
         uint16_t alarm_email_threshold = 0; // in MINUTES
         int8_t RSSI = 0;
         int8_t SNR = 0;
