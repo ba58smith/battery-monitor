@@ -9,10 +9,12 @@
 
 #define BASE_STATION
 
-// Un-comment and change the baud rate below to change it.
+// Un-comment and change the baud rate below if you want to change it.
+// Then upload and run, which will write the new baud rate to EEPROM.
+// Then comment it out again, upload, and run - so it won't keep writing
+// it to EEPROM every time it boots.
 // #define LORA_BAUD_RATE 115200ULL     // default 115200
 
-#define WEB_UPDATE_ALARM_AGE 3600000ULL // 1 hour
 
 // BME280 alarm ranges
 #define TEMP_ALARM_RANGE_LOWER 72.0F // s/b 72.0

@@ -15,9 +15,10 @@
  * displayed on the OLED. Packets are received from the transmitters, and they come from any physical
  * sensors attached to the receiver PCB, and they can be used to show the status of things (like
  * info about the last web update). A packet contains all we want to know about a single datapoint, 
- * such as "Boat voltage" or "Pool water temperature" or "Last Web Update". This class handles the
+ * such as "Boat voltage" or "Pool water temperature". This class handles the
  * receipt of a new packet through Serial2 (via the LoRa radio) and the adding or updating of the new
- * packet in the std::list of packets.
+ * packet in the std::list of packets. It also provides a way to add packets that don't come in from
+ * the LoRa radio.
  */
 
 class PacketList {
@@ -299,25 +300,7 @@ public:
        ui_->turnOFFLed();
        ui_->update_status_line("Waiting for data");
     }
-
     
-    /**
-    * @brief Create or update the packet that tells when the last successful web update happened
-    * 
-    * @param last_successful_update - updated every time the web update is successful
-    */
-
-    void update_web_update_packet(uint64_t last_successful_update) {
-       Serial.println("Updating web packet");
-       int16_t alarm = 0;
-       String source = "Web";
-       String name_of_data = "Last update";
-       String value = ui_->get_current_time();
-       if (millis() - last_successful_update > WEB_UPDATE_ALARM_AGE) {
-           alarm = 333;
-       }
-       create_generic_packet(source, name_of_data, value, alarm);
-    }
 
     /**
     * @brief Iterates through packets_ one packet at a time. Called in main.cpp to display the

@@ -22,7 +22,7 @@ private:
     UI* ui_;
     InfluxDBClient* influxdb_;
     EMailSender* email_sender_;
-    String email_recipient_ = "3172130876@msg.fi.google.com";
+    String email_recipient_ = String(EMAIL_RECIPIENT);
     EMailSender::EMailMessage email_message_;
     EMailSender::Response email_response_;
 
@@ -34,7 +34,7 @@ public:
     Internet(UI* ui) : ui_{ui} {
         influxdb_ = new InfluxDBClient(INFLUXDB_URL, INFLUXDB_DB_NAME);
         influxdb_->setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);
-        email_sender_ = new EMailSender("ba58smith@gmail.com", "lsqxrdaljhluazgj");
+        email_sender_ = new EMailSender(EMAIL_SENDER_ADDRESS, GMAIL_APP_PASSWORD);
         email_message_.subject = "Message from LoRa Receiver";
         email_message_.mime = MIME_TEXT_PLAIN;
     }
@@ -76,12 +76,7 @@ public:
         Point packet("packets");
         packet.addTag("source", data_source);
         packet.addTag("name", data_name);
-        if (data_source != "Web") {
-            packet.addField("value", data_value.toFloat());
-        }
-        else {
-            packet.addField("string_value", data_value);
-        }
+        packet.addField("value", data_value.toFloat());
         packet.addField("alarm", alarm_code);
         packet.addField("rssi", RSSI);
         packet.addField("snr", SNR);
@@ -164,9 +159,10 @@ public:
                 Serial.println("email_response_.status: " + email_response_.status);
                 Serial.println("email_response_.code: " + email_response_.code);
                 Serial.println("email_response_.desc: " + email_response_.desc);
-                if (email_response_.code == 0) {
+                if (email_response_.code == 0) { // email sent successfully
                     it->first_alarm_time = 0; // so we don't keep sending the email, unless it's still in an
                                               // alarm state for another alarm_email_threshold minutes.
+                                              // BAS: is this going to do what I want?
                 }
             }
         }

@@ -27,6 +27,9 @@
 // Put your wifi credentials here
 const char *SSID = "YourWifiSSIDHere";
 const char *PASSWORD = "YourWifiPasswordHere";
+const char *EMAIL_RECIPIENT = "EmailAddressYouSendToThatConvertsToATextMessage";
+const char *EMAIL_SENDER_ADDRESS = "EmailFROMAddress";
+const char *GMAIL_APP_PASSWORD = "PasswordYouGenerateInYourGoogleAcctForASingleApp";
 
 #define INFLUXDB_URL "YourServerAddressAndPortHere" // format: "http://server-name.com:8086"
 // InfluxDB v1 database name 
