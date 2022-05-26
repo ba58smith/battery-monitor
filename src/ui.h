@@ -212,6 +212,14 @@ public:
     }
 
     /**
+     * @brief makes alarm_.sound_alarm() available outside the class
+     */
+
+    void sound_alarm(uint16_t alarm_code) {
+        alarm_->sound_alarm(alarm_code);
+    }
+
+    /**
     * @brief Create a string of the current time (HH:MM am/pm)
     */
 

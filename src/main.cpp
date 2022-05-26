@@ -21,9 +21,9 @@ uint8_t blue_led_pin = 26;
 uint8_t buzzer_pin = 4;
  
 uint64_t packet_check_delay = 500;
-uint64_t influx_update_delay = 5000;   // every 5 seconds
+uint64_t influx_update_delay = 30000;   // every 30 seconds
 uint64_t bme280_update_delay = 600000; // every 10:00
-uint64_t alarm_email_delay = 300000;   // every 5:00
+uint64_t alarm_email_delay = 60000;   // every 1:00
 bool first_run = true;
 uint64_t packet_display_interval = 3500; // every 3.5 seconds
 

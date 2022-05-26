@@ -190,6 +190,7 @@ public:
        packet->alarm_has_sounded = false;
        packet->first_alarm_time = 0;
        packet->alarm_email_threshold = 0;
+       packet->alarm_email_counter = 1; // 1, not 0
        packet->RSSI = 0;
        packet->SNR = 0;
        packet->timestamp = 0;
@@ -245,6 +246,7 @@ public:
                    }
                    if (!packet->alarm_code) { // there is no alarm
                        it->first_alarm_time = 0;
+                       it->alarm_email_counter = 1; // reset to new packet value: 1, not 0
                    }
                    it->alarm_code = packet->alarm_code;
                    it->RSSI = packet->RSSI;
@@ -300,7 +302,7 @@ public:
        ui_->turnOFFLed();
        ui_->update_status_line("Waiting for data");
     }
-    
+
 
     /**
     * @brief Iterates through packets_ one packet at a time. Called in main.cpp to display the

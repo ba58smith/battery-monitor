@@ -147,24 +147,30 @@ public:
         // create a time_t (which is the number of seconds since 1/1/1970) and set it to the current time
         time_t now;
         time(&now);
+        bool email_attempted = false;
         for (Packet_it_t it = first_packet; it != end_of_packets; ++it) {
-            if (it->first_alarm_time > 0 && it->first_alarm_time + (it->alarm_email_threshold * 60) < now) {
+            uint64_t threshold = it->alarm_email_counter * it->alarm_email_threshold * 60;
+            if (it->first_alarm_time > 0 && it->first_alarm_time + threshold < now) {
                 tm* first_alarm = localtime(&it->first_alarm_time);
-                String message_text = ui_->get_current_time() + "\n" + it->data_source + " " + it->data_name + ": " + it->data_value 
+                String message_text = ui_->get_current_time() + " (Msg # " + it->alarm_email_counter + ")\n" 
+                                    + it->data_source + " " + it->data_name + ": " + it->data_value 
                                     + "\nAlarm condition began on\n" + ui_->get_date_time_str(first_alarm);
                 Serial.println(message_text);
                 email_message_.message = message_text;
                 email_response_ = email_sender_->send(email_recipient_, email_message_);
+                email_attempted = true;
                 Serial.println("Sending email");
                 Serial.println("email_response_.status: " + email_response_.status);
                 Serial.println("email_response_.code: " + email_response_.code);
                 Serial.println("email_response_.desc: " + email_response_.desc);
-                if (email_response_.code == 0) { // email sent successfully
-                    it->first_alarm_time = 0; // so we don't keep sending the email, unless it's still in an
-                                              // alarm state for another alarm_email_threshold minutes.
-                                              // BAS: is this going to do what I want?
+                if (email_response_.code.toInt() == 0) { // email sent successfully
+                    it->alarm_email_counter++;
                 }
+                ui_->sound_alarm(it->alarm_code);
             }
+        }
+        if (!email_attempted) {
+            Serial.println("No emails needed");
         }
         ui_->update_status_line("Waiting for data");
         
