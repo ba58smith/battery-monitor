@@ -46,6 +46,7 @@ public:
         bool success = bme280_->begin(0x76);
         if (!success) {
           Serial.println("Could not find a valid BME280 sensor, check wiring!");
+          ui_->update_status_line("BME280 error: wiring?");
         }
         else {
             Serial.println("BME280::begin() was successful");
