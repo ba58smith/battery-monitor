@@ -86,7 +86,7 @@ public:
             return false;
         }
         else {
-            ui_->update_status_line("Waiting for data");
+            ui_->update_status_line("InfluxDB write successful");
             Serial.println("InfluxDB write successful");
             return true;
         }
@@ -119,6 +119,7 @@ public:
                 }
             }
         }
+        ui_->update_status_line("Waiting for data");
         return true;
     }
 
@@ -143,7 +144,7 @@ public:
 
     void send_alarm_email(Packet_it_t first_packet, Packet_it_t end_of_packets) {
         Serial.println("Looking for alarms that need an email sent");
-        ui_->update_status_line("Looking 4 old alarms", 2);
+        ui_->update_status_line("Look for old alarms", 2);
         // create a time_t (which is the number of seconds since 1/1/1970) and set it to the current time
         time_t now;
         time(&now);
@@ -152,9 +153,9 @@ public:
             uint64_t threshold = it->alarm_email_counter * it->alarm_email_threshold * 60;
             if (it->first_alarm_time > 0 && it->first_alarm_time + threshold < now) {
                 tm* first_alarm = localtime(&it->first_alarm_time);
-                String message_text = ui_->get_current_time() + " (Msg # " + it->alarm_email_counter + ")\n" 
+                String message_text = ui_->date_time_str() + " (Msg # " + it->alarm_email_counter + ")\n" 
                                     + it->data_source + " " + it->data_name + ": " + it->data_value 
-                                    + "\nAlarm condition began on\n" + ui_->get_date_time_str(first_alarm);
+                                    + "\nAlarm condition began on\n" + ui_->date_time_str(first_alarm);
                 Serial.println(message_text);
                 email_message_.message = message_text;
                 email_response_ = email_sender_->send(email_recipient_, email_message_);
