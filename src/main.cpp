@@ -6,7 +6,7 @@
 #include "packet_list.h"
 #include "reyax_lora.h"
 #include "ui.h"
-
+#include "queues.h"
 #include "internet.h"
 #include "elapsedMillis.h"
 #include <Adafruit_BME280.h>
@@ -59,7 +59,11 @@ void setup() {
   // the LoRa parameters, if desired.
   // EXAMPLE: lora.set_output_power(10);
 
+  initialize_queues();
+  
   packet_list->start_bme280();
+
+  packet_list->start_tasks();
   
   ui->prepare_display();
 
@@ -74,18 +78,14 @@ void setup() {
 
 void loop() {
   
-  if (packet_check_timer > packet_check_delay) {
-    // check for new packets coming in from transmitters on Serial2
-    packet_list->get_new_packets();
-    packet_check_timer = 0;
-  }
-
-  // read current bme280 data and add/update its packets in the list
-  if (first_run ||  bme280_timer > bme280_update_delay) {
+  // read current bme280 data and add its packets to the queue
+  /*
+  if (first_run || bme280_timer > bme280_update_delay) {
     packet_list->update_BME280_packets();
     bme280_timer = 0;
     first_run = false;
   }
+  */
 
   if (packet_display_timer > packet_display_interval) {
     if (packet_list->packet_list_not_empty()) {
