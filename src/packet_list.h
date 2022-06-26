@@ -7,6 +7,7 @@
 #include "config.h"
 #include "alarm.h"
 #include "ui.h"
+#include "queues.h"
 
 #include <Adafruit_BME280.h>
 
@@ -30,12 +31,62 @@ private:
     UI* ui_;
     Adafruit_BME280* bme280_;
 
+    /**
+     * @brief The function that will ultimately be run as a Task,
+     * every 500 ms. (But only after being called in start_task_impl(), below.)
+     */
+    
+    void get_new_packets_task() {
+        while (1) {
+            this->get_new_packets();
+            vTaskDelay(250 / portTICK_RATE_MS);
+        }
+    }
+
+    void handle_packet_queue_task() {
+        while (1) {
+            this->handle_packet_queue();
+            vTaskDelay(250 / portTICK_RATE_MS);
+        }
+    }
+
+    /**
+     * @brief Allows get_new_packets_task(), above, to be called from
+     * within xTaskCreate from inside a class method.
+     * https://stackoverflow.com/questions/45831114
+     */
+    
+    static void start_get_new_packets_task_impl(void* _this) {
+        static_cast<PacketList*>(_this)->get_new_packets_task();
+    }
+
+    /**
+     * @brief Allows handle_packet_queue_task(), above, to be called from
+     * within xTaskCreate from inside a class method.
+     * https://stackoverflow.com/questions/45831114
+     */
+    
+    static void start_handle_packet_queue_task_impl(void* _this) {
+        static_cast<PacketList*>(_this)->handle_packet_queue_task();
+    }
+
 public:
    /**
     * @brief Construct a new PacketList object.
     */
 
     PacketList(UI* ui, Adafruit_BME280* bme280) : ui_{ui}, bme280_{bme280} {}
+
+    /**
+     * @brief Starts the task that reads new packets coming in from the LoRa,
+     * and the task that moves new packets from the new task queue into PacketList.
+     * https://stackoverflow.com/questions/45831114
+     */
+    
+    void start_tasks() {
+        xTaskCreate(this->start_get_new_packets_task_impl, "get_new_packets", 10000, this, 2, NULL); // BAS: try 5000?
+        xTaskCreate(this->start_handle_packet_queue_task_impl, "handle_packet_queue", 10000, this, 1, NULL); // BAS: try 5000?
+    }
 
     /**
      * @brief Start the BME280. It doesn't happen if it's inside
@@ -72,7 +123,6 @@ public:
            // see if the next 4 characters == "RCV="
            if (Serial2.readStringUntil('=') == "RCV") {
                Serial.println("It's a LoRa packet");
-               ui_->update_status_line("It's a LoRa packet", 2);
                initialize_packet(&new_packet);
                // make sure this is from one of OUR transmitters:
                new_packet.transmitter_address = Serial2.readStringUntil(',').toInt();
@@ -81,7 +131,6 @@ public:
                    && new_packet.transmitter_address <= ADDRESS_RANGE_UPPER) {
                    // now we know it's OK to process this packet
                    ui_->turnOnLed();
-                   ui_->update_status_line("It's one of ours", 2);
                    temp_str = Serial2.readStringUntil(',');
                    if (temp_str.length() == 0) {
                        Serial.println("Error reading data_length from Serial2.");
@@ -157,14 +206,11 @@ public:
                    new_packet.unique_id = String(new_packet.transmitter_address) + new_packet.data_name;
                    new_packet.timestamp = millis();
                    
-                   add_packet_to_list(&new_packet);
+                   // add_packet_to_list(&new_packet);
+                   add_packet_to_queue(new_packet);
                    new_packet_received = true;
-                   ui_->update_status_line((new_packet.data_source + ":" +
-                                            new_packet.data_name + ":" +
-                                            new_packet.data_value), 5);
-                    ui_->update_status_line("Waiting for data");
-
-                    ui_->turnOFFLed();
+                   ui_->update_status_line("Waiting for data");
+                   ui_->turnOFFLed();
                }
            }
        }
@@ -220,7 +266,7 @@ public:
        }
        new_packet.alarm_email_threshold = alarm_threshold;
        new_packet.timestamp = millis();
-       add_packet_to_list(&new_packet);
+       add_packet_to_queue(new_packet);
     }
    
     /**
@@ -266,6 +312,27 @@ public:
                Serial.println("New packet count: " + String(list_size));
            }
        }
+       print_packet_list_contents(); 
+    }
+
+    /**
+     * @brief Print out the fields of every packet in PacketList.
+     */
+
+    void print_packet_list_contents() {
+        String output = "";
+        for (Packet_it_t it = packets_.begin(); it != packets_.end(); ++it) {
+            output = "ID:" + it->unique_id + "," + "length:" + String(it->data_length) + "," + "Source:" + it->data_source + "," 
+            + "Name:" + it->data_name + "," + "Value:" + it->data_value + ",";
+            Serial.print(output);
+            output = "AlmCode:" + String(it->alarm_code) + "," + "AlmSnd:" + String(it->alarm_has_sounded) + "," 
+            + "FstAlmTime:" + String(it->first_alarm_time) + ",";
+            Serial.print(output);
+            output = "AlmThsld:" + String(it->alarm_email_threshold) + "," + "EmlCntr:" + String(it->alarm_email_counter) 
+            + "," + "RSSI:" + String(it->RSSI) + "," + "SNR:" + String(it->SNR)
+            + "," + "Time:" + String(it->timestamp) + "," + "Snt2Inflx:" + String(it->sent_to_influx);
+            Serial.println(output);
+        }    
     }
    
     /**
@@ -290,7 +357,7 @@ public:
        if (data <= PRESSURE_ALARM_RANGE_LOWER || data >= PRESSURE_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
-       create_generic_packet("BME280", "Pressure (\"hg)", String(data, 2), alarm, PRESSURE_ALARM_EMAIL_THRESHOLD);
+       create_generic_packet("BME280", "Pressure", String(data, 2), alarm, PRESSURE_ALARM_EMAIL_THRESHOLD);
        alarm = 0;
 
        data = (bme280_->readHumidity());
@@ -304,6 +371,17 @@ public:
        ui_->update_status_line("Waiting for data");
     }
 
+    /**
+     * @brief Set as an xTask to run a few times per second, to check for new packets in
+     * the new packet queue, and add them to (or update them in) PacketList.
+     */
+
+    void handle_packet_queue() {
+       Packet_t packet;
+       while (read_packet_from_queue(&packet)) {
+           add_packet_to_list(&packet);
+        }
+    }
 
     /**
     * @brief Iterates through packets_ one packet at a time. Called in main.cpp to display the

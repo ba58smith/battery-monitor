@@ -46,6 +46,7 @@ public:
     bool connect_to_wifi() {
         uint8_t attempts = 0;
         Serial.print("Connecting to wifi ");
+        ui_->update_status_line("Connecting to wifi...");
         WiFi.begin(wifi_ssid_, wifi_pw_);
         while (WiFi.status() != WL_CONNECTED && attempts < 10) {
             Serial.print(". ");
@@ -55,11 +56,13 @@ public:
         Serial.println("");
         if (WiFi.status() != WL_CONNECTED) {
             Serial.println("Not connected to wifi");
+            ui_->update_status_line("Connection failed.");
             delay(500);
             return false;
         }
         else {
             Serial.println("Connected to " + WiFi.localIP().toString());
+            ui_->update_status_line("Connected to wifi.");
             return true;
         }
     }
