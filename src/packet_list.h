@@ -254,9 +254,9 @@ public:
     * @param alarm_email_threshold # of minutes an alarm condition must exist before an email is sent
     */
 
-    void create_generic_packet(String source, String name_of_data, String value, int16_t alarm, uint16_t alarm_threshold = 0) {
+    void create_generic_packet(String id, String source, String name_of_data, String value, int16_t alarm, uint16_t alarm_threshold = 0) {
        Packet_t new_packet;
-       new_packet.unique_id = source + name_of_data;
+       new_packet.unique_id = id;
        new_packet.data_source = source;
        new_packet.data_name = name_of_data;
        new_packet.data_value = value;
@@ -322,15 +322,15 @@ public:
     void print_packet_list_contents() {
         String output = "";
         for (Packet_it_t it = packets_.begin(); it != packets_.end(); ++it) {
-            output = "ID:" + it->unique_id + "," + "length:" + String(it->data_length) + "," + "Source:" + it->data_source + "," 
-            + "Name:" + it->data_name + "," + "Value:" + it->data_value + ",";
+            output = "ID:" + String(it->unique_id) + ",Address:" + String(it->transmitter_address) + ",length:" + String(it->data_length) 
+            + ",Source:" + it->data_source + ",Name:" + it->data_name + ",Value:" + it->data_value + ",";
             Serial.print(output);
-            output = "AlmCode:" + String(it->alarm_code) + "," + "AlmSnd:" + String(it->alarm_has_sounded) + "," 
-            + "FstAlmTime:" + String(it->first_alarm_time) + ",";
-            Serial.print(output);
-            output = "AlmThsld:" + String(it->alarm_email_threshold) + "," + "EmlCntr:" + String(it->alarm_email_counter) 
-            + "," + "RSSI:" + String(it->RSSI) + "," + "SNR:" + String(it->SNR)
-            + "," + "Time:" + String(it->timestamp) + "," + "Snt2Inflx:" + String(it->sent_to_influx);
+            output = "AlmCode:" + String(it->alarm_code) + ",AlmSnd:" + String(it->alarm_has_sounded) + ",FstAlmTime:" 
+            + String(it->first_alarm_time) + ",";
+            Serial.println(output);
+            output = "   AlmThsld:" + String(it->alarm_email_threshold) + ",EmlCntr:" + String(it->alarm_email_counter) 
+            + ",RSSI:" + String(it->RSSI) + ",SNR:" + String(it->SNR)
+            + ",Time:" + String(it->timestamp) + ",Snt2Inflx:" + String(it->sent_to_influx);
             Serial.println(output);
         }    
     }
@@ -349,7 +349,7 @@ public:
        if (data <= TEMP_ALARM_RANGE_LOWER || data >= TEMP_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
-       create_generic_packet("BME280", "Temp (F)", String(data, 0), alarm, TEMP_ALARM_EMAIL_THRESHOLD);
+       create_generic_packet("BME280_temp","BME280", "Temp (F)", String(data, 0), alarm, TEMP_ALARM_EMAIL_THRESHOLD);
        alarm = 0;
        
        data = (bme280_->readPressure() * 0.0002953); // convert from Pascals to inches of mercury
@@ -357,7 +357,7 @@ public:
        if (data <= PRESSURE_ALARM_RANGE_LOWER || data >= PRESSURE_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
-       create_generic_packet("BME280", "Pressure", String(data, 2), alarm, PRESSURE_ALARM_EMAIL_THRESHOLD);
+       create_generic_packet("BME280_press", "BME280", "Pressure", String(data, 2), alarm, PRESSURE_ALARM_EMAIL_THRESHOLD);
        alarm = 0;
 
        data = (bme280_->readHumidity());
@@ -365,8 +365,9 @@ public:
        if (data <= HUMIDITY_ALARM_RANGE_LOWER || data >= HUMIDITY_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
-       create_generic_packet("BME280", "Humidity", String(data, 0), alarm, HUMIDITY_ALARM_EMAIL_THRESHOLD);
+       create_generic_packet("BME280_humid", "BME280", "Humidity", String(data, 0), alarm, HUMIDITY_ALARM_EMAIL_THRESHOLD);
        alarm = 0;
+       
        ui_->turnOFFLed();
        ui_->update_status_line("Waiting for data");
     }

@@ -79,13 +79,11 @@ void setup() {
 void loop() {
   
   // read current bme280 data and add its packets to the queue
-  /*
   if (first_run || bme280_timer > bme280_update_delay) {
     packet_list->update_BME280_packets();
     bme280_timer = 0;
     first_run = false;
   }
-  */
 
   if (packet_display_timer > packet_display_interval) {
     if (packet_list->packet_list_not_empty()) {
