@@ -66,7 +66,7 @@ private:
      * https://stackoverflow.com/questions/45831114
      */
     
-    static void start_handle_packet_queue_task_impl(void* _this) {
+    static void start_handle_packet_queue_task(void* _this) {
         static_cast<PacketList*>(_this)->handle_packet_queue_task();
     }
 
@@ -85,7 +85,7 @@ public:
     
     void start_tasks() {
         xTaskCreate(this->start_get_new_packets_task_impl, "get_new_packets", 10000, this, 2, NULL); // BAS: try 5000?
-        xTaskCreate(this->start_handle_packet_queue_task_impl, "handle_packet_queue", 10000, this, 1, NULL); // BAS: try 5000?
+        xTaskCreate(this->start_handle_packet_queue_task, "handle_packet_queue", 10000, this, 1, NULL); // BAS: try 5000?
     }
 
     /**
@@ -206,8 +206,8 @@ public:
                    new_packet.unique_id = String(new_packet.transmitter_address) + new_packet.data_name;
                    new_packet.timestamp = millis();
                    
-                   // add_packet_to_list(&new_packet);
                    add_packet_to_queue(new_packet);
+                   add_packet_to_influx_queue(new_packet);
                    new_packet_received = true;
                    ui_->update_status_line("Waiting for data");
                    ui_->turnOFFLed();
@@ -245,7 +245,7 @@ public:
     }
    
     /**
-    * @brief Create a new "generic" packet with data from any source, then call add_packet_to_list().
+    * @brief Create a new "generic" packet with data from any source, then call add_packet_to_queue().
     * 
     * @param source - "Truck" or "Boat" or "Pool", etc.
     * @param name_of_data  "Voltage", "Water temp", etc.
@@ -267,6 +267,7 @@ public:
        new_packet.alarm_email_threshold = alarm_threshold;
        new_packet.timestamp = millis();
        add_packet_to_queue(new_packet);
+       add_packet_to_influx_queue(new_packet);
     }
    
     /**
@@ -312,7 +313,7 @@ public:
                Serial.println("New packet count: " + String(list_size));
            }
        }
-       print_packet_list_contents(); 
+       // print_packet_list_contents(); // needed only for troubleshooting
     }
 
     /**

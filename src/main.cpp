@@ -20,19 +20,15 @@
 uint8_t blue_led_pin = 26;
 uint8_t buzzer_pin = 4;
  
-uint64_t wifi_check_delay = 120000; // every 2:00
-uint64_t packet_check_delay = 500;
-uint64_t influx_update_delay = 30000;   // every 30 seconds
+uint64_t wifi_check_delay = 30000; // every 30 seconds
 uint64_t bme280_update_delay = 600000; // every 10:00
-uint64_t alarm_email_delay = 60000;   // every 1:00
 bool first_run = true;
 uint64_t packet_display_interval = 3500; // every 3.5 seconds
+uint64_t alarm_email_delay = 60000;   // every 1:00
 
 elapsedMillis wifi_check_timer;
-elapsedMillis packet_check_timer;
 elapsedMillis bme280_timer;
 elapsedMillis packet_display_timer;
-elapsedMillis influx_update_timer;
 elapsedMillis alarm_email_timer;
 
 auto* lora = new ReyaxLoRa();
@@ -62,11 +58,9 @@ void setup() {
   // EXAMPLE: lora.set_output_power(10);
 
   initialize_queues();
-  
   packet_list->start_bme280();
-
   packet_list->start_tasks();
-  
+  net->start_tasks();
   ui->prepare_display();
 
   // Connect to wifi
@@ -99,13 +93,6 @@ void loop() {
       ui->display_one_packet(packet_list->advance_one_packet());
       packet_display_timer = 0;
     }
-  }
-
-  if (influx_update_timer > influx_update_delay) {
-    Packet_it_t it_begin = packet_list->get_packets_begin();
-    Packet_it_t it_end = packet_list->get_packets_end();
-    net->send_packets_to_influx(it_begin, it_end);
-    influx_update_timer = 0;
   }
 
   if (alarm_email_timer > alarm_email_delay) {

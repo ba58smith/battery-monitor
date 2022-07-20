@@ -26,6 +26,28 @@ private:
     EMailSender::EMailMessage email_message_;
     EMailSender::Response email_response_;
 
+    /**
+     * @brief The function that will ultimately be run as a Task,
+     * every minute. (But only after being called in start_task_impl(), below.)
+     */
+    
+    void handle_influx_queue_task() {
+        while (1) {
+            this->handle_influx_queue();
+            vTaskDelay(60000 / portTICK_RATE_MS);
+        }
+    }
+
+    /**
+     * @brief Allows handle_influx_queue_task(), above, to be called from
+     * within xTaskCreate from inside a class method.
+     * https://stackoverflow.com/questions/45831114
+     */
+    
+    static void start_handle_influx_queue_task(void* _this) {
+        static_cast<Internet*>(_this)->handle_influx_queue_task();
+    }
+
 public:
     
     /**
@@ -37,6 +59,15 @@ public:
         email_sender_ = new EMailSender(EMAIL_SENDER_ADDRESS, GMAIL_APP_PASSWORD);
         email_message_.subject = "Message from LoRa Receiver";
         email_message_.mime = MIME_TEXT_PLAIN;
+    }
+
+    /**
+     * @brief Starts the task that sends new packets from the Influx queue to InfluxDB.
+     * https://stackoverflow.com/questions/45831114
+     */
+    
+    void start_tasks() {
+        xTaskCreate(this->start_handle_influx_queue_task, "handle_influx_queue", 10000, this, 1, NULL);
     }
 
     /**
@@ -67,6 +98,20 @@ public:
         }
     }
 
+    /**
+     * @brief Set as an xTask to run a few times per minute, to check for new packets in
+     * the influx queue, and send them to InfluxDB.
+     */
+
+    void handle_influx_queue() {
+        if (WiFi.status() == WL_CONNECTED) {
+            Packet_t packet;
+            while (read_packet_from_influx_queue(&packet)) {
+                send_one_packet_to_influx(packet.data_source, packet.data_name, packet.data_value, packet.alarm_code,
+                                          packet.RSSI, packet.SNR);
+            }
+        }
+    }
 
     /**
      * @brief Sends one datapoint to InfluxDB 
@@ -93,37 +138,6 @@ public:
             Serial.println("InfluxDB write successful");
             return true;
         }
-    }
-
-    /**
-     * @brief sends all unsent packets to InfluxDB
-     * @param first_packet An iterator to PacketList::packets.begin()
-     * @param end_of_packets An iterator to PacketList::packets.end()
-     * @return true if successful, false if unsucessful for any reason
-     */
-
-    bool send_packets_to_influx(Packet_it_t first_packet, Packet_it_t end_of_packets) {
-        if (WiFi.status() != WL_CONNECTED) {
-            Serial.println("wifi not connected");
-            if (!connect_to_wifi()) {
-                return false;
-            }
-        }
-        for (Packet_it_t it = first_packet; it != end_of_packets; ++it) {
-            if (!it->sent_to_influx) {
-                if (send_one_packet_to_influx(it->data_source, it->data_name, it->data_value, it->alarm_code,
-                                    it->RSSI, it->SNR)) {
-                    Serial.println("Packet successfully sent to InfluxDB: " + it->data_source + " " + it->data_name);
-                    it->sent_to_influx = true;
-                }
-                else {    
-                    Serial.println("send_one_packet_to_influx() failed");
-                    return false;
-                }
-            }
-        }
-        ui_->update_status_line("Waiting for data");
-        return true;
     }
 
     String get_ssid() {
