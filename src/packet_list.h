@@ -89,6 +89,18 @@ public:
     }
 
     /**
+     * @brief Setup this method in an xTask to run a few times per second, to check for new packets in
+     * the new packet queue, and add them to (or update them in) PacketList.
+     */
+
+    void handle_packet_queue() {
+       Packet_t packet;
+       while (read_packet_from_queue(&packet)) {
+           add_packet_to_list(&packet);
+        }
+    }
+
+    /**
      * @brief Start the BME280. It doesn't happen if it's inside
      * the constructor, I think because that happens before setup()
      */
@@ -371,18 +383,6 @@ public:
        
        ui_->turnOFFLed();
        ui_->update_status_line("Waiting for data");
-    }
-
-    /**
-     * @brief Set as an xTask to run a few times per second, to check for new packets in
-     * the new packet queue, and add them to (or update them in) PacketList.
-     */
-
-    void handle_packet_queue() {
-       Packet_t packet;
-       while (read_packet_from_queue(&packet)) {
-           add_packet_to_list(&packet);
-        }
     }
 
     /**

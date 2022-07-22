@@ -24,7 +24,7 @@
  * "status info" on the top (yellow) line, and cycles through all of the other data 
  * the receiver is getting from the transmitters. This class also controls the Alarm,
  * which is used when any packet's data is "out of range", but could also be used to alert
- * of something like no wifi, or a failed web update. And it controls the LEDs.
+ * of something like no wifi, or a failed web update.
  */
 
 class UI {
