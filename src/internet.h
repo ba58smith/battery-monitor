@@ -94,6 +94,7 @@ public:
         else {
             Serial.println("Connected to " + WiFi.localIP().toString());
             ui_->update_status_line("Connected to wifi.");
+            configTime(-18000, 3600, "pool.ntp.org"); // Connect to NTP server with -5 TZ offset (-18000), 1 hr DST offset (3600).
             return true;
         }
     }
@@ -162,8 +163,9 @@ public:
     void send_alarm_email(Packet_it_t first_packet, Packet_it_t end_of_packets) {
         Serial.println("Looking for alarms that need an email sent");
         ui_->update_status_line("Look for old alarms", 2);
-        // create a time_t (which is the number of seconds since 1/1/1970) and set it to the current time
+        // create a time_t (which is the number of seconds since 1/1/1970) called "now"
         time_t now;
+        // set "now" to the current time
         time(&now);
         bool email_attempted = false;
         for (Packet_it_t it = first_packet; it != end_of_packets; ++it) {
