@@ -274,7 +274,7 @@ public:
        new_packet.data_value = value;
        new_packet.alarm_code = alarm;
        if (new_packet.alarm_code > 0) {
-           time(&new_packet.first_alarm_time); // sets first_alarm_time to current time
+           time(&new_packet.first_alarm_time); // set first alarm time to current time
        }
        new_packet.alarm_email_threshold = alarm_threshold;
        new_packet.timestamp = millis();
@@ -357,7 +357,8 @@ public:
        Serial.println("Updating BME280 data");
        ui_->update_status_line("Updating BME280 data");
        int16_t alarm = 0;
-       float data = (bme280_->readTemperature() * 1.8) + 32;
+       float data = (bme280_->readTemperature() * 1.8) + 32.0;
+       data = data + TEMP_CALIBRATION; // Corrects for individual BME280 - see config.h
        Serial.println("temperature: " + String(data, 1));
        if (data <= TEMP_ALARM_RANGE_LOWER || data >= TEMP_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
