@@ -77,24 +77,32 @@ public:
     bool connect_to_wifi() {
         uint8_t attempts = 0;
         Serial.print("Connecting to wifi ");
-        ui_->update_status_line("Connecting to wifi...");
+        ui_->before_connect_to_wifi_screen(get_ssid());
         WiFi.begin(wifi_ssid_, wifi_pw_);
         while (WiFi.status() != WL_CONNECTED && attempts < 10) {
             Serial.print(". ");
             delay(500);
             attempts++;
         }
+        ui_->after_connect_to_wifi_screen(connected_to_wifi(), get_ip()); // display wifi connection result, good or bad
         Serial.println("");
-        if (WiFi.status() != WL_CONNECTED) {
+        if (!connected_to_wifi()) {
             Serial.println("Not connected to wifi");
-            ui_->update_status_line("Connection failed.");
-            delay(500);
             return false;
         }
         else {
             Serial.println("Connected to " + WiFi.localIP().toString());
-            ui_->update_status_line("Connected to wifi.");
             configTime(-18000, 3600, "pool.ntp.org"); // Connect to NTP server with -5 TZ offset (-18000), 1 hr DST offset (3600).
+            if (ui_->system_time_is_valid()) {
+                Serial.print("New time: ");
+                ui_->update_status_line("New time:", 3);
+            }
+            else {
+                Serial.print("INVALID TIME: ");
+                ui_->update_status_line("INVALID TIME:", 3);
+            }
+            Serial.println(ui_->date_time_str());
+            ui_->update_status_line(ui_->date_time_str(), 3);
             return true;
         }
     }
@@ -122,6 +130,9 @@ public:
                              int8_t RSSI = 0, int8_t SNR = 0) {
         Serial.println("Sending one new packet to InfluxDB");
         ui_->update_status_line("Sending to InfluxDB");
+        if (!connected_to_wifi()) {
+            connect_to_wifi();
+        }
         Point packet("packets");
         packet.addTag("source", data_source);
         packet.addTag("name", data_name);
@@ -132,11 +143,13 @@ public:
         if (!influxdb_->writePoint(packet)) {
             Serial.println("InfluxDB write failed: " + influxdb_->getLastErrorMessage());
             ui_->update_status_line("InfluxDB write failed", 2);
+            ui_->update_status_line("Waiting for data");
             return false;
         }
         else {
-            ui_->update_status_line("InfluxDB write successful");
             Serial.println("InfluxDB write successful");
+            ui_->update_status_line("Influx write success", 2);
+            ui_->update_status_line("Waiting for data");
             return true;
         }
     }
@@ -155,7 +168,11 @@ public:
 
     /**
      * @brief Sends a text-only email. Used to notify user of an alarm
-     * condition that has not cleared in a timely manner.
+     * condition that has not cleared in a timely manner. alarm_email_threshold
+     * is the number of minutes that an alarm condition must exist for the first
+     * email to be sent, and for subsequent emails to be sent if the alarm
+     * condition continues. A threshold of 0 for a datapoint means no email will
+     * ever be sent.
      * @param first_packet An iterator to PacketList::packets.begin()
      * @param end_of_packets An iterator to PacketList::packets.end()
      */
@@ -163,34 +180,45 @@ public:
     void send_alarm_email(Packet_it_t first_packet, Packet_it_t end_of_packets) {
         Serial.println("Looking for alarms that need an email sent");
         ui_->update_status_line("Look for old alarms", 2);
-        // create a time_t (which is the number of seconds since 1/1/1970) called "now"
-        time_t now;
-        // set "now" to the current time
-        time(&now);
         bool email_attempted = false;
-        for (Packet_it_t it = first_packet; it != end_of_packets; ++it) {
-            uint64_t threshold = it->alarm_email_counter * it->alarm_email_threshold * 60;
-            if (it->first_alarm_time > 0 && it->first_alarm_time + threshold < now) {
-                tm* first_alarm = localtime(&it->first_alarm_time);
-                String message_text = ui_->date_time_str() + " (Msg # " + it->alarm_email_counter + ")\n" 
-                                    + it->data_source + " " + it->data_name + ": " + it->data_value 
-                                    + "\nAlarm condition began on\n" + ui_->date_time_str(first_alarm);
-                Serial.println(message_text);
-                email_message_.message = message_text;
-                email_response_ = email_sender_->send(email_recipient_, email_message_);
-                email_attempted = true;
-                Serial.println("Sending email");
-                Serial.println("email_response_.status: " + email_response_.status);
-                Serial.println("email_response_.code: " + email_response_.code);
-                Serial.println("email_response_.desc: " + email_response_.desc);
-                if (email_response_.code.toInt() == 0) { // email sent successfully
-                    it->alarm_email_counter++;
-                }
-                ui_->sound_alarm(it->alarm_code);
+        if (ui_->system_time_is_valid()) {
+            time_t now; // create a time_t (the number of seconds since 1/1/1970) called "now"
+            time(&now); // set "now" to the system clock's time
+            for (Packet_it_t it = first_packet; it != end_of_packets; ++it) {
+                if (it->alarm_email_threshold > 0) { // skip all this if the email threshold for this packet is 0
+                    uint64_t threshold = it->alarm_email_counter * it->alarm_email_threshold * 60;
+                    if (it->first_alarm_time > 0 && it->first_alarm_time + threshold < now) {
+                        tm *first_alarm = localtime(&it->first_alarm_time);
+                        String message_text = ui_->date_time_str() + " (Msg # " + it->alarm_email_counter + ")\n" 
+                           + it->data_source + " " + it->data_name + ": " + it->data_value + "\nAlarm condition began on\n" 
+                           + ui_->date_time_str(first_alarm);
+                        Serial.println(message_text);
+                        email_message_.message = message_text;
+                        if (!connected_to_wifi()) {
+                            connect_to_wifi();
+                        }
+                        if (connected_to_wifi()) { // check again - connect_to_wifi() might have failed
+                            email_response_ = email_sender_->send(email_recipient_, email_message_);
+                            email_attempted = true;
+                            Serial.println("Sending email");
+                            Serial.println("email_response_.status: " + email_response_.status);
+                            Serial.println("email_response_.code: " + email_response_.code);
+                            Serial.println("email_response_.desc: " + email_response_.desc);
+                            if (email_response_.code.toInt() == 0) { // email sent successfully
+                                it->alarm_email_counter++;
+                            }
+                            ui_->sound_alarm(it->alarm_code);
+                        } // end of what happens if an alarm email was attempted for this datapoint
+                    } // end of what happens if an alarm email should be sent
+                } // end of what happens if an alarm email is a possibility for this datapoint
+            } // end of what happens for each packet
+            if (!email_attempted) {
+                Serial.println("No emails attempted");
             }
-        }
-        if (!email_attempted) {
-            Serial.println("No emails needed");
+        } // end of what happens if system time is valid
+        else {
+            Serial.println("INVALID SYSTEM TIME");
+            ui_->update_status_line("Invalid system time", 3);
         }
         ui_->update_status_line("Waiting for data");
         
