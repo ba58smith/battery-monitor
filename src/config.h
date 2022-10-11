@@ -18,14 +18,14 @@
 
 // BME280 alarm ranges
 #define TEMP_CALIBRATION -1.0 // my particular BME280 reads 1.0 Fahrenheit too warm
-#define TEMP_ALARM_RANGE_LOWER 74.0F // s/b 74.0
+#define TEMP_ALARM_RANGE_LOWER 73.0F // s/b 73.0
 #define TEMP_ALARM_RANGE_UPPER 88.0F // s/b 88.0
-#define TEMP_ALARM_EMAIL_THRESHOLD 60 // in MINUTES
+#define TEMP_ALARM_EMAIL_THRESHOLD 120 // in MINUTES
 #define PRESSURE_ALARM_RANGE_LOWER 29.0F // inches of hg - normal is 29.0 - 31.0
 #define PRESSURE_ALARM_RANGE_UPPER 31.0F // s/b 31.0
 #define PRESSURE_ALARM_EMAIL_THRESHOLD 0 // in MINUTES (Can't think of a pressure-related situation worth a notification)
 #define HUMIDITY_ALARM_RANGE_LOWER 30.0F // s/b 30.0 - 50.0 per Mayo Clinic
-#define HUMIDITY_ALARM_RANGE_UPPER 60.0F // 50.0 gave too many false alarms
-#define HUMIDITY_ALARM_EMAIL_THRESHOLD 60 // in MINUTES
+#define HUMIDITY_ALARM_RANGE_UPPER 60.0F // s/b 60.0 (50.0 gave too many false alarms)
+#define HUMIDITY_ALARM_EMAIL_THRESHOLD 120 // in MINUTES
 
 #endif // _CONFIG_H_

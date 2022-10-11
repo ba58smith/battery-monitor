@@ -124,9 +124,9 @@ public:
        display_->setCursor(0, line1);
        display_->println("Boat Monitor");
        display_->setCursor(0, line2);
-       display_->println("Ver 2.20");
+       display_->println("Ver 2.30");
        display_->setCursor(0, line3);
-       display_->print("24 May, 2022");
+       display_->print("9 Oct, 2022");
        display_->display();
        update_status_line("JimBooth's", 5, 2);
     }
@@ -240,6 +240,31 @@ public:
        String current_time_string = time_buf;
        return current_time_string;
     }
+
+    /**
+     * @brief Make sure system clock is set. Use any time a timestamp is created or
+     * compared to.
+     */
+
+    bool system_time_is_valid() {
+        struct tm timeinfo;
+        if (!getLocalTime(&timeinfo)) {
+               Serial.println("Failed to obtain time");
+               update_status_line("C/N UPDATE TIME", 3);
+               return false;
+        }
+        char year_buf[5];
+        strftime(year_buf, sizeof(year_buf), "%G", &timeinfo);
+        String year_string = year_buf;
+        uint16_t year_as_int = year_string.toInt();
+        if (year_as_int > 2021) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
 
     void turnOnLed() {
         digitalWrite(LED_BUILTIN, HIGH);

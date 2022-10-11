@@ -84,8 +84,8 @@ public:
      */
     
     void start_tasks() {
-        xTaskCreate(this->start_get_new_packets_task_impl, "get_new_packets", 10000, this, 2, NULL); // BAS: try 5000?
-        xTaskCreate(this->start_handle_packet_queue_task, "handle_packet_queue", 10000, this, 1, NULL); // BAS: try 5000?
+        xTaskCreate(this->start_get_new_packets_task_impl, "get_new_packets", 10000, this, 2, NULL);
+        xTaskCreate(this->start_handle_packet_queue_task, "handle_packet_queue", 10000, this, 1, NULL);
     }
 
     /**
@@ -181,9 +181,16 @@ public:
                        Serial.println("Alarm code = " + temp_str);
                        new_packet.alarm_code = temp_str.toInt();
                        if (new_packet.alarm_code > 0) {
-                           time(&new_packet.first_alarm_time); // set to current time
-                           char* date = ctime(&new_packet.first_alarm_time);
-                           Serial.println("First alarm time: " + String(date));
+                           if (ui_->system_time_is_valid()) {
+                               time(&new_packet.first_alarm_time); // set to current time
+                               char *date = ctime(&new_packet.first_alarm_time);
+                               Serial.println("First alarm time: " + String(date));
+                           }
+                           else {
+                               new_packet.first_alarm_time = 0;
+                               ui_->update_status_line("System time invalid", 3);
+                               Serial.println("System time invalid, first_alarm_time set to 0");
+                           }
                        }
                    }
                    // this is the last bit of data in the <Data> portion, so we go back to "," as the separator
@@ -274,7 +281,14 @@ public:
        new_packet.data_value = value;
        new_packet.alarm_code = alarm;
        if (new_packet.alarm_code > 0) {
-           time(&new_packet.first_alarm_time); // set first alarm time to current time
+           if (ui_->system_time_is_valid()) {
+              time(&new_packet.first_alarm_time); // set first alarm time to current time
+           }
+           else {
+              new_packet.first_alarm_time = 0;
+              ui_->update_status_line("System time invalid", 3);
+              Serial.println("System time invalid, first_alarm_time set to 0");
+           }
        }
        new_packet.alarm_email_threshold = alarm_threshold;
        new_packet.timestamp = millis();
@@ -300,13 +314,21 @@ public:
                if (it->unique_id == packet->unique_id) { // this packet is already in the list
                    // update the data that's different with each packet from the same datapoint
                    it->data_value = packet->data_value;
-                   if (!it->alarm_code && packet->alarm_code) { // alarm code is going from 0 to non-zero
+                   if (!packet->alarm_code) { // there is no alarm
+                       it->first_alarm_time = 0;
+                       it->alarm_email_counter = 1; // reset to new packet value: (1, not 0)
+                   }
+                   else if (!it->alarm_code && packet->alarm_code) { // alarm code is going from 0 to non-zero
                        it->alarm_has_sounded = false;
                        it->first_alarm_time = packet->first_alarm_time;
                    }
-                   if (!packet->alarm_code) { // there is no alarm
-                       it->first_alarm_time = 0;
-                       it->alarm_email_counter = 1; // reset to new packet value: 1, not 0
+                   // edge case: datapoint has been in an alarm state, but the system time has been invalid,
+                   // so first_alarm_time has not been set yet. See if the system time is now valid, and if
+                   // it is, set first_alarm_time.
+                   else if (it->alarm_code && packet->alarm_code && it->first_alarm_time == 0) {
+                       if (ui_->system_time_is_valid()) {
+                           time(&it->first_alarm_time); // set first alarm time to current time
+                       }
                    }
                    it->alarm_code = packet->alarm_code;
                    it->RSSI = packet->RSSI;

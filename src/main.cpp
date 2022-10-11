@@ -24,7 +24,7 @@ uint64_t wifi_check_delay = 30000; // every 30 seconds
 uint64_t bme280_update_delay = 600000; // every 10:00
 bool first_run = true;
 uint64_t packet_display_interval = 3500; // every 3.5 seconds
-uint64_t alarm_email_delay = 60000;   // every 1:00
+uint64_t alarm_email_delay = 300000;   // every 5:00
 
 elapsedMillis wifi_check_timer;
 elapsedMillis bme280_timer;
@@ -64,9 +64,7 @@ void setup() {
   ui->prepare_display();
 
   // Connect to wifi
-  ui->before_connect_to_wifi_screen(net->get_ssid());
   net->connect_to_wifi();
-  ui->after_connect_to_wifi_screen(net->connected_to_wifi(), net->get_ip());
 
 } // setup()
 
@@ -74,7 +72,7 @@ void loop() {
   
   // periodically make sure we're still connected to wifi
   if (wifi_check_timer > wifi_check_delay) {
-    if (WiFi.status() != WL_CONNECTED) {
+    if (!net->connected_to_wifi()) {
       net->connect_to_wifi();
     }
   }
