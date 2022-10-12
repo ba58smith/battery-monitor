@@ -25,11 +25,13 @@ uint64_t bme280_update_delay = 600000; // every 10:00
 bool first_run = true;
 uint64_t packet_display_interval = 3500; // every 3.5 seconds
 uint64_t alarm_email_delay = 300000;   // every 5:00
+uint64_t sys_time_display_delay = 30000; // every 30 seconds
 
 elapsedMillis wifi_check_timer;
 elapsedMillis bme280_timer;
 elapsedMillis packet_display_timer;
 elapsedMillis alarm_email_timer;
+elapsedMillis sys_time_display_timer;
 
 auto* lora = new ReyaxLoRa();
 
@@ -97,4 +99,10 @@ void loop() {
     net->send_alarm_email(it_begin, it_end);
     alarm_email_timer = 0;
   }
+
+  if (sys_time_display_timer > sys_time_display_delay) {
+    ui->display_system_time();
+    sys_time_display_timer = 0;
+  }
+
 } // loop()

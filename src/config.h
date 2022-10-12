@@ -25,7 +25,7 @@
 #define PRESSURE_ALARM_RANGE_UPPER 31.0F // s/b 31.0
 #define PRESSURE_ALARM_EMAIL_THRESHOLD 0 // in MINUTES (Can't think of a pressure-related situation worth a notification)
 #define HUMIDITY_ALARM_RANGE_LOWER 30.0F // s/b 30.0 - 50.0 per Mayo Clinic
-#define HUMIDITY_ALARM_RANGE_UPPER 60.0F // s/b 60.0 (50.0 gave too many false alarms)
+#define HUMIDITY_ALARM_RANGE_UPPER 70.0F // s/b 60.0 (50.0 gave too many false alarms)
 #define HUMIDITY_ALARM_EMAIL_THRESHOLD 120 // in MINUTES
 
 #endif // _CONFIG_H_

@@ -266,6 +266,22 @@ public:
     }
 
 
+    /**
+     * @brief Display the system time on the status line. Call this
+     * method in main.cpp on some kind of timer.
+     */
+
+    void display_system_time() {
+        if (system_time_is_valid()) {
+            update_status_line(date_time_str(), 3);
+        }
+        else {
+            update_status_line("Invalid system time", 3);
+        }
+        update_status_line("Waiting for data", 1);
+    }
+
+
     void turnOnLed() {
         digitalWrite(LED_BUILTIN, HIGH);
         digitalWrite(blue_led_pin_, HIGH);
