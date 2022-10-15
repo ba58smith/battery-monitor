@@ -273,9 +273,11 @@ public:
 
     void display_system_time() {
         if (system_time_is_valid()) {
+            Serial.println(date_time_str());
             update_status_line(date_time_str(), 3);
         }
         else {
+            Serial.println("Invalid system time");
             update_status_line("Invalid system time", 3);
         }
         update_status_line("Waiting for data", 1);
