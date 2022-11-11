@@ -33,15 +33,15 @@ elapsedMillis packet_display_timer;
 elapsedMillis alarm_email_timer;
 elapsedMillis sys_time_display_timer;
 
-auto* lora = new ReyaxLoRa();
+//auto* lora = new ReyaxLoRa(); BAS
 
 auto* ui = new UI(blue_led_pin, buzzer_pin);
 
-auto* net = new Internet(ui);
+//auto* net = new Internet(ui); BAS
 
-auto* bme280 = new Adafruit_BME280();
+//auto* bme280 = new Adafruit_BME280(); BAS
 
-auto* packet_list = new PacketList(ui, bme280);
+//auto* packet_list = new PacketList(ui, bme280); BAS
 
 void setup() {
   // For Serial Monitor display of debug messages
@@ -49,7 +49,7 @@ void setup() {
   // Wait for the serial connection
   while (!Serial);
 
-  lora->initialize();
+  //lora->initialize(); BAS
 
 #ifdef LORA_SETUP_REQUIRED
   lora->one_time_setup();
@@ -60,18 +60,18 @@ void setup() {
   // EXAMPLE: lora.set_output_power(10);
 
   initialize_queues();
-  packet_list->start_bme280();
-  packet_list->start_tasks();
-  net->start_tasks();
+  //packet_list->start_bme280(); BAS
+  //packet_list->start_tasks(); BAS
+  //net->start_tasks(); BAS
   ui->prepare_display();
 
   // Connect to wifi
-  net->connect_to_wifi();
+  //net->connect_to_wifi();
 
 } // setup()
 
 void loop() {
-  
+  /*
   // periodically make sure we're still connected to wifi
   if (wifi_check_timer > wifi_check_delay) {
     if (!net->connected_to_wifi()) {
@@ -92,17 +92,19 @@ void loop() {
       packet_display_timer = 0;
     }
   }
+  */
 
   if (sys_time_display_timer > sys_time_display_delay) {
     ui->display_system_time();
     sys_time_display_timer = 0;
   }  
-
+/*
   if (alarm_email_timer > alarm_email_delay) {
     Packet_it_t it_begin = packet_list->get_packets_begin();
     Packet_it_t it_end = packet_list->get_packets_end();
     net->send_alarm_email(it_begin, it_end);
     alarm_email_timer = 0;
   }
+  */
 
 } // loop()

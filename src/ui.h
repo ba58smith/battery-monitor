@@ -5,19 +5,28 @@
 #include "config.h"
 #include "packet_t.h"
 #include "packet_list.h"
-#include <Adafruit_SSD1306.h>
+#include <Adafruit_SSD1327.h>
+#include <Fonts/FreeMono9pt7b.h>
+#include <Fonts/FreeMonoBold9pt7b.h>
+#include <Fonts/FreeMonoOblique9pt7b.h>
+#include "DejaVu_Sans_12.h"
+#include "DejaVu_Sans_12_bold.h"
 #include "alarm.h"
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define OLED_RESET 5
+#define SCREEN_HEIGHT 128 // OLED display height, in pixels
+#define OLED_RESET -1
 
 // a quick way to adjust the vertical seperation between the 
 // text lines on the oled. So, below, line1 will start on y16, line2 on y29, etc.
-#define line1 16
-#define line2 29
-#define line3 42
-#define line4 55
+#define line1 25
+#define line2 39
+#define line3 53
+#define line4 67
+#define line5 81
+#define line6 101
+#define line7 116
+#define line8 128
 
 /**
  * @brief UI is the class that controls the display, the alarm, and the LEDs. It displays
@@ -30,7 +39,7 @@
 class UI {
 
 private:
-    Adafruit_SSD1306* display_ = NULL;
+    Adafruit_SSD1327* display_ = NULL;
     Alarm* alarm_;
     uint8_t blue_led_pin_;
     uint8_t buzzer_pin_;
@@ -38,7 +47,7 @@ private:
 public:
     
     UI(uint8_t blue_led_pin, uint8_t buzzer_pin) : blue_led_pin_{blue_led_pin}, buzzer_pin_{buzzer_pin} {
-        display_ = new Adafruit_SSD1306(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+        display_ = new Adafruit_SSD1327(128, 128, &Wire, OLED_RESET, 1000000);
         alarm_ = new Alarm(buzzer_pin_);
         pinMode(blue_led_pin, OUTPUT);
         digitalWrite(blue_led_pin, LOW);
@@ -47,17 +56,17 @@ public:
     }
 
     void prepare_display() {
-        if (display_->begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+        if (display_->begin(0x3D)) { // 0x3D if DC wire is connected to VCC, or 0x3C if connected to GND
             Serial.println("OLED successfully started");
         }
         else {
-            Serial.println("SSD1306 allocation failed");
+            Serial.println("SSD1327 allocation failed");
         }
         display_->clearDisplay();
         display_->setCursor(0,0);
         // If you don't do these next two lines, there is no display at all for some reason
-        display_->drawPixel(0, 0, SSD1306_WHITE);
-        display_->setTextColor(SSD1306_WHITE);
+        display_->setTextColor(SSD1327_WHITE);
+        display_->setFont(&DejaVu_Sans_12);
         display_about_screen();
     }
 
@@ -124,15 +133,15 @@ public:
        display_->setCursor(0, line1);
        display_->println("Boat Monitor");
        display_->setCursor(0, line2);
-       display_->println("Ver 2.30");
+       display_->println("Version 2.40");
        display_->setCursor(0, line3);
-       display_->print("9 Oct, 2022");
+       display_->print("11 Nov, 2022");
        display_->display();
-       update_status_line("JimBooth's", 5, 2);
+       update_status_line("Jim Booth's", 5, 1);
     }
    
     /**
-    * @brief Updates the yellow status line (the top line of the OLED)
+    * @brief Updates the top line of the OLED
     * 
     * @param status_str - The string you want to display there - max length is 21.
     * @param duration_seconds - # of seconds to display this string before the next update 
@@ -154,7 +163,7 @@ public:
      * @brief Display the status just before connecting to wifi.
      */
     void before_connect_to_wifi_screen(String ssid) {
-        update_status_line("Connecting to:");
+        update_status_line("Connect to:");
         update_status_line(ssid);
     }
 
@@ -168,7 +177,7 @@ public:
             update_status_line("Waiting for data", 0);
         }
         else { // not connected
-           update_status_line("Wait for data:no wifi");
+           update_status_line("Waiting:no wifi");
         }
     }
     
@@ -178,23 +187,23 @@ public:
      */
     
     void clear_status_line() {
-        display_->setCursor(0, 0);
+        display_->setCursor(0, 0); // BAS: necessary?
         // This is how Jim did it, and it works
         for (int y = 0; y <= 15; y++) {
             for (int x = 0; x < 127; x++) {
-                display_->drawPixel(x, y, BLACK);
+                display_->drawPixel(x, y, SSD1327_BLACK);
             }
         }
         // drawFastHLine causes a crash   
         // display_->drawFastHLine(0, 15, 15, SSD1306_BLACK);
-        display_->setCursor(0, 0);
+        display_->setCursor(0, 12); // Ready to print on the status line
         display_->display();
     }
 
     void clear_packet_area() {
         for (int y = line1; y <= SCREEN_HEIGHT; y++) {
             for (int x = 0; x < SCREEN_WIDTH; x++) {
-                display_->drawPixel(x, y, BLACK);
+                display_->drawPixel(x, y, SSD1327_BLACK);
             }
         }
         // this crashes the system
@@ -229,14 +238,14 @@ public:
        if (tm_to_convert == NULL) {
            if (!getLocalTime(&timeinfo)) {
                Serial.println("Failed to obtain time");
-               return "Invalid time";
+               return "Invalid sys time";
            }
        }
        else {
            timeinfo = *tm_to_convert;
        }
        char time_buf[21];
-       strftime(time_buf, sizeof(time_buf), "%b %d: %I:%M:%S %P", &timeinfo);
+       strftime(time_buf, sizeof(time_buf), "%b %d: %I:%M:%S %P", &timeinfo); // BAS: this is too long - make it 2 lines?
        String current_time_string = time_buf;
        return current_time_string;
     }
@@ -250,7 +259,7 @@ public:
         struct tm timeinfo;
         if (!getLocalTime(&timeinfo)) {
                Serial.println("Failed to obtain time");
-               update_status_line("C/N UPDATE TIME", 3);
+               update_status_line("Invalid sys time", 3);
                return false;
         }
         char year_buf[5];
@@ -278,7 +287,7 @@ public:
         }
         else {
             Serial.println("Invalid system time");
-            update_status_line("Invalid system time", 3);
+            update_status_line("Invalid sys time", 3);
         }
         update_status_line("Waiting for data", 1);
     }
