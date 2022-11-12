@@ -24,9 +24,9 @@
 #define line3 53
 #define line4 67
 #define line5 81
-#define line6 101
-#define line7 116
-#define line8 128
+#define line6 95
+#define line7 109
+#define line8 123
 
 /**
  * @brief UI is the class that controls the display, the alarm, and the LEDs. It displays
@@ -77,17 +77,16 @@ public:
      
     void display_one_packet(Packet_it_t packet) {
        clear_packet_area();
-       display_->setTextSize(1);
-       display_->setCursor(0, line1);
+       display_->setCursor(0, line4);
        display_->print(packet->data_source);
        display_->print("-");
        display_->println(packet->data_name);
-       display_->setCursor(0, line2);
+       display_->setCursor(0, line5);
        display_->print(packet->data_value);
        // convert Age to a string of M:SS
        int32_t seconds = ((millis() - packet->timestamp) / 1000);
        char age_buffer[10];
-       String age_str = " Age: ";
+       String age_str = "Age: ";
        if (seconds < 3600) { // less than 1 hour old
            uint8_t minutes = seconds / 60;
            seconds = seconds % 60;
@@ -95,26 +94,19 @@ public:
            age_str = age_str + age_buffer; // now it's " Age: 1:28"
        }
        else {
-           age_str = age_str + "> 1 hr"; // now it's " Age: > 1 hr"
+           age_str = age_str + ">1 hr"; // now it's "Age: >1 hr"
        }
        // pad the space btwn data_value and "Age" to right-justify the age string
-       uint8_t text_padding_size = 21 - age_str.length() - packet->data_value.length();
+       uint8_t text_padding_size = 17 - age_str.length() - packet->data_value.length();
        for (uint8_t x = 0; x < text_padding_size; x++) {
             age_str = " " + age_str;
         }
        display_->print(age_str);
-       display_->setCursor(0, line3);
+       display_->setCursor(0, line6);
        if (packet->alarm_code) {
-           display_->print("  *** Alarm ");
+           display_->print(" ** Alarm ");
            display_->print(packet->alarm_code);
-           display_->print(" ***");
-       }
-       display_->setCursor(0, line4);
-       if (packet->RSSI != 0) { // this is a packet from a transmitter
-           display_->print("RSSI: ");
-           display_->print(packet->RSSI);
-           display_->print("  /  SNR: ");
-           display_->print(packet->SNR);
+           display_->print(" **");
        }
        display_->display();
        if (packet->alarm_code && !packet->alarm_has_sounded) {
@@ -124,34 +116,36 @@ public:
     }
    
     /**
-     * @brief Uses the whole screen to display info about the program 
+     * @brief Displays info about the program 
     */
    
     void display_about_screen() {
+       update_status_lines("Jim Booth's", "Boat Monitor");
        clear_packet_area();
-       display_->setTextSize(1);
-       display_->setCursor(0, line1);
-       display_->println("Boat Monitor");
-       display_->setCursor(0, line2);
        display_->println("Version 2.40");
-       display_->setCursor(0, line3);
+       display_->setCursor(0, line4);
        display_->print("11 Nov, 2022");
        display_->display();
-       update_status_line("Jim Booth's", 5, 1);
+       delay(5000);
+       clear_status_area();
+       clear_packet_area();
+
     }
    
     /**
-    * @brief Updates the top line of the OLED
+    * @brief Updates the top two line of the OLED
     * 
-    * @param status_str - The string you want to display there - max length is 21.
+    * @param status_str - The string you want to display on the top line - max length is 21.
+    * @param status_str2 - The string to display on the second line.
     * @param duration_seconds - # of seconds to display this string before the next update 
     * of the status line. If not specified, it's 1 second.
     */
 
-    void update_status_line(String status_str, uint8_t duration_seconds = 1, uint8_t temp_font_size = 1) {
-       clear_status_line();
+    void update_status_lines(String status_str, String status_str2, uint8_t duration_seconds = 1, uint8_t temp_font_size = 1) {
+       clear_status_area();
        display_->setTextSize(temp_font_size);
-       display_->print(status_str);
+       display_->println(status_str);
+       display_->print(status_str2);
        display_->display();
        if (duration_seconds) {
            delay(duration_seconds * 1000);
@@ -160,11 +154,22 @@ public:
     }
 
     /**
+     * @brief Update the display of the very bottom line
+     * 
+     * @param bottom_line_str - the string to display
+     */
+
+    void update_bottom_line(String bottom_line_str) {
+        clear_bottom_line();
+        display_->print(bottom_line_str);
+        display_->display();
+    }
+
+    /**
      * @brief Display the status just before connecting to wifi.
      */
     void before_connect_to_wifi_screen(String ssid) {
-        update_status_line("Connect to:");
-        update_status_line(ssid);
+        update_status_lines("Connect to:", ssid);
     }
 
     /**
@@ -172,43 +177,62 @@ public:
      */
     void after_connect_to_wifi_screen(bool connected_to_wifi, String local_ip) {
         if (connected_to_wifi) {  
-            update_status_line("Connected to:");
-            update_status_line(local_ip, 3);
-            update_status_line("Waiting for data", 0);
+            update_status_lines("Connected to:", local_ip, 3);
+            update_status_lines("Waiting for data", "", 0);
         }
         else { // not connected
-           update_status_line("Waiting:no wifi");
+           update_status_lines("Waiting for data", "(No wifi)");
         }
     }
     
     /**
-     * @brief Clears the top yellow line of the OLED and prepares it for the next text
-     * to display there.
+     * @brief Clears the top two lines of the OLED.
      */
-    
-    void clear_status_line() {
+    void clear_status_area() {
         display_->setCursor(0, 0); // BAS: necessary?
         // This is how Jim did it, and it works
-        for (int y = 0; y <= 15; y++) {
+        for (int y = 0; y <= line3 - 1; y++) {
             for (int x = 0; x < 127; x++) {
                 display_->drawPixel(x, y, SSD1327_BLACK);
             }
         }
         // drawFastHLine causes a crash   
         // display_->drawFastHLine(0, 15, 15, SSD1306_BLACK);
-        display_->setCursor(0, 12); // Ready to print on the status line
+        display_->setCursor(0, line1); // Ready to print on the first line
         display_->display();
     }
 
+    /**
+     * @brief Clear everything BETWEEN the status lines and the bottom line,
+     * then position the cursor to start printing in that area.
+     * 
+     */
     void clear_packet_area() {
-        for (int y = line1; y <= SCREEN_HEIGHT; y++) {
+        for (int y = line2 + 1; y < SCREEN_HEIGHT - 15; y++) {
             for (int x = 0; x < SCREEN_WIDTH; x++) {
                 display_->drawPixel(x, y, SSD1327_BLACK);
             }
         }
         // this crashes the system
         // display_->drawFastHLine(line1, 63, 48, SSD1306_BLACK);
+        display_->setCursor(0, line3);
         display_->display();
+    }
+
+    /**
+     * @brief Clear just the bottom line and set the cursor to the
+     * beginning of that line, ready to print.
+     * 
+     */
+    void clear_bottom_line() {
+        for (int y = SCREEN_HEIGHT - 14; y < SCREEN_HEIGHT; y++) {
+            for (int x = 0; x < SCREEN_WIDTH; x++) {
+                display_->drawPixel(x, y, SSD1327_BLACK);
+            }
+        }
+        display_->setCursor(0, line8);
+        display_->display();
+
     }
 
     /**
@@ -245,7 +269,8 @@ public:
            timeinfo = *tm_to_convert;
        }
        char time_buf[21];
-       strftime(time_buf, sizeof(time_buf), "%b %d: %I:%M:%S %P", &timeinfo); // BAS: this is too long - make it 2 lines?
+       //strftime(time_buf, sizeof(time_buf), "%b %d: %I:%M:%S %P", &timeinfo); // BAS: this is too long - make it 2 lines?
+       strftime(time_buf, sizeof(time_buf), "%b %d  %I:%M %P", &timeinfo); // this version has no seconds
        String current_time_string = time_buf;
        return current_time_string;
     }
@@ -259,7 +284,7 @@ public:
         struct tm timeinfo;
         if (!getLocalTime(&timeinfo)) {
                Serial.println("Failed to obtain time");
-               update_status_line("Invalid sys time", 3);
+               update_status_lines("Invalid sys time", "", 3);
                return false;
         }
         char year_buf[5];
@@ -283,13 +308,12 @@ public:
     void display_system_time() {
         if (system_time_is_valid()) {
             Serial.println(date_time_str());
-            update_status_line(date_time_str(), 3);
+            update_bottom_line(date_time_str());
         }
         else {
             Serial.println("Invalid system time");
-            update_status_line("Invalid sys time", 3);
+            update_bottom_line("Invalid sys time");
         }
-        update_status_line("Waiting for data", 1);
     }
 
 

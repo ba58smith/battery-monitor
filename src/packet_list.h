@@ -109,7 +109,7 @@ public:
         bool success = bme280_->begin(0x76);
         if (!success) {
           Serial.println("Could not find a valid BME280 sensor, check wiring!");
-          ui_->update_status_line("BME280 error: wiring?");
+          ui_->update_status_lines("BME280 error:", "check wiring");
         }
         else {
             Serial.println("BME280::begin() was successful");
@@ -131,7 +131,7 @@ public:
            // starts at the right place. If it doesn't find a "+", it won't find a valid packet.
            String init_str = Serial2.readStringUntil('+');
            Serial.println("New data coming in");
-           ui_->update_status_line("New data coming in", 2);
+           ui_->update_status_lines("New LoRa data", "coming in", 2);
            // see if the next 4 characters == "RCV="
            if (Serial2.readStringUntil('=') == "RCV") {
                Serial.println("It's a LoRa packet");
@@ -188,7 +188,7 @@ public:
                            }
                            else {
                                new_packet.first_alarm_time = 0;
-                               ui_->update_status_line("System time invalid", 3);
+                               ui_->update_status_lines("System time invalid", "", 3);
                                Serial.println("System time invalid, first_alarm_time set to 0");
                            }
                        }
@@ -228,7 +228,7 @@ public:
                    add_packet_to_queue(new_packet);
                    add_packet_to_influx_queue(new_packet);
                    new_packet_received = true;
-                   ui_->update_status_line("Waiting for data");
+                   ui_->update_status_lines("Waiting for data", "");
                    ui_->turnOFFLed();
                }
            }
@@ -286,7 +286,7 @@ public:
            }
            else {
               new_packet.first_alarm_time = 0;
-              ui_->update_status_line("System time invalid", 3);
+              ui_->update_status_lines("System time invalid", "", 3);
               Serial.println("System time invalid, first_alarm_time set to 0");
            }
        }
@@ -377,7 +377,7 @@ public:
     void update_BME280_packets() {
        ui_->turnOnLed();
        Serial.println("Updating BME280 data");
-       ui_->update_status_line("Updating BME280 data");
+       ui_->update_status_lines("Updating BME280", "data");
        int16_t alarm = 0;
        float data = (bme280_->readTemperature() * 1.8) + 32.0;
        data = data + TEMP_CALIBRATION; // Corrects for individual BME280 - see config.h
@@ -405,7 +405,7 @@ public:
        alarm = 0;
        
        ui_->turnOFFLed();
-       ui_->update_status_line("Waiting for data");
+       ui_->update_status_lines("Waiting for data", "");
     }
 
     /**

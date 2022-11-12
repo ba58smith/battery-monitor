@@ -95,14 +95,14 @@ public:
             configTime(-18000, 3600, "pool.ntp.org"); // Connect to NTP server with -5 TZ offset (-18000), 1 hr DST offset (3600).
             if (ui_->system_time_is_valid()) {
                 Serial.print("New time: ");
-                ui_->update_status_line("New time:", 3);
+                ui_->update_bottom_line(ui_->date_time_str());
+                ui_->update_status_lines("Set system time", ui_->date_time_str(), 3);
             }
             else {
                 Serial.print("INVALID TIME: ");
-                ui_->update_status_line("INVALID TIME:", 3);
+                ui_->update_status_lines("INVALID TIME:", "", 3);
             }
             Serial.println(ui_->date_time_str());
-            ui_->update_status_line(ui_->date_time_str(), 3);
             return true;
         }
     }
@@ -129,7 +129,7 @@ public:
     bool send_one_packet_to_influx(String data_source, String data_name, String data_value, uint16_t alarm_code = 0,
                              int8_t RSSI = 0, int8_t SNR = 0) {
         Serial.println("Sending one new packet to InfluxDB");
-        ui_->update_status_line("Sending to InfluxDB");
+        ui_->update_status_lines("Sending to Influx", "");
         if (!connected_to_wifi()) {
             connect_to_wifi();
         }
@@ -142,14 +142,12 @@ public:
         packet.addField("snr", SNR);
         if (!influxdb_->writePoint(packet)) {
             Serial.println("InfluxDB write failed: " + influxdb_->getLastErrorMessage());
-            ui_->update_status_line("InfluxDB write failed", 2);
-            ui_->update_status_line("Waiting for data");
+            ui_->update_status_lines("Waiting for data", "Influx write fail", 2);
             return false;
         }
         else {
             Serial.println("InfluxDB write successful");
-            ui_->update_status_line("Influx write success", 2);
-            ui_->update_status_line("Waiting for data");
+            ui_->update_status_lines("Waiting for data", "Influx write OK", 2);
             return true;
         }
     }
@@ -179,7 +177,7 @@ public:
 
     void send_alarm_email(Packet_it_t first_packet, Packet_it_t end_of_packets) {
         Serial.println("Looking for alarms that need an email sent");
-        ui_->update_status_line("Look for old alarms", 2);
+        ui_->update_status_lines("Looking for old", "alarms to text", 2);
         bool email_attempted = false;
         if (ui_->system_time_is_valid()) {
             time_t now; // create a time_t (the number of seconds since 1/1/1970) called "now"
@@ -218,9 +216,9 @@ public:
         } // end of what happens if system time is valid
         else {
             Serial.println("INVALID SYSTEM TIME");
-            ui_->update_status_line("Invalid system time", 3);
+            ui_->update_status_lines("Invalid system time", "", 3);
         }
-        ui_->update_status_line("Waiting for data");
+        ui_->update_status_lines("Waiting for data", "");
         
     }
 
