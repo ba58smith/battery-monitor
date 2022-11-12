@@ -188,8 +188,10 @@ public:
                            }
                            else {
                                new_packet.first_alarm_time = 0;
-                               ui_->update_status_lines("System time invalid", "", 3);
                                Serial.println("System time invalid, first_alarm_time set to 0");
+                               ui_->update_bottom_line("Invalid sys time");
+                               ui_->update_status_lines("Invalid sys time", "", 3);
+                               ui_->update_status_lines("Waiting for data", "");
                            }
                        }
                    }
@@ -286,8 +288,10 @@ public:
            }
            else {
               new_packet.first_alarm_time = 0;
-              ui_->update_status_lines("System time invalid", "", 3);
               Serial.println("System time invalid, first_alarm_time set to 0");
+              ui_->update_bottom_line("Invalid sys time");
+              ui_->update_status_lines("Invalid sys time", "", 3);
+              ui_->update_status_lines("Waiting for data", "");
            }
        }
        new_packet.alarm_email_threshold = alarm_threshold;
@@ -376,8 +380,8 @@ public:
 
     void update_BME280_packets() {
        ui_->turnOnLed();
-       Serial.println("Updating BME280 data");
-       ui_->update_status_lines("Updating BME280", "data", 3);
+       Serial.println("Updating Home Data");
+       ui_->update_status_lines("Updating Home", "     Data", 3);
        int16_t alarm = 0;
        float data = (bme280_->readTemperature() * 1.8) + 32.0;
        data = data + TEMP_CALIBRATION; // Corrects for individual BME280 - see config.h
@@ -385,7 +389,7 @@ public:
        if (data <= TEMP_ALARM_RANGE_LOWER || data >= TEMP_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
-       create_generic_packet("BME280_temp","BME280", "Temp (F)", String(data, 0), alarm, TEMP_ALARM_EMAIL_THRESHOLD);
+       create_generic_packet("Home_temp","Home", "Temp (F)", String(data, 0), alarm, TEMP_ALARM_EMAIL_THRESHOLD);
        alarm = 0;
        
        data = (bme280_->readPressure() * 0.0002953); // convert from Pascals to inches of mercury
@@ -393,7 +397,7 @@ public:
        if (data <= PRESSURE_ALARM_RANGE_LOWER || data >= PRESSURE_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
-       create_generic_packet("BME280_press", "BME280", "Pressure", String(data, 2), alarm, PRESSURE_ALARM_EMAIL_THRESHOLD);
+       create_generic_packet("Home_press", "Home", "Pressure", String(data, 2), alarm, PRESSURE_ALARM_EMAIL_THRESHOLD);
        alarm = 0;
 
        data = (bme280_->readHumidity());
@@ -401,7 +405,7 @@ public:
        if (data <= HUMIDITY_ALARM_RANGE_LOWER || data >= HUMIDITY_ALARM_RANGE_UPPER) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
-       create_generic_packet("BME280_humid", "BME280", "Humidity", String(data, 0), alarm, HUMIDITY_ALARM_EMAIL_THRESHOLD);
+       create_generic_packet("Home_humid", "Home", "Humidity", String(data, 0), alarm, HUMIDITY_ALARM_EMAIL_THRESHOLD);
        alarm = 0;
        
        ui_->turnOFFLed();

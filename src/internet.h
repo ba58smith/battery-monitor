@@ -100,6 +100,7 @@ public:
             }
             else {
                 Serial.print("INVALID TIME: ");
+                ui_->update_bottom_line("Invalid sys time");
                 ui_->update_status_lines("INVALID TIME:", "", 3);
             }
             Serial.println(ui_->date_time_str());
@@ -218,7 +219,8 @@ public:
         } // end of what happens if system time is valid
         else {
             Serial.println("INVALID SYSTEM TIME");
-            ui_->update_status_lines("Invalid system time", "", 3);
+            ui_->update_bottom_line("Invalid sys time");
+            ui_->update_status_lines("Invalid sys time", "", 3);
         }
         ui_->update_status_lines("Waiting for data", "");
         

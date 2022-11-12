@@ -6,9 +6,6 @@
 #include "packet_t.h"
 #include "packet_list.h"
 #include <Adafruit_SSD1327.h>
-#include <Fonts/FreeMono9pt7b.h>
-#include <Fonts/FreeMonoBold9pt7b.h>
-#include <Fonts/FreeMonoOblique9pt7b.h>
 #include "DejaVu_Sans_12.h"
 #include "DejaVu_Sans_12_bold.h"
 #include "alarm.h"
@@ -18,7 +15,10 @@
 #define OLED_RESET -1
 
 // a quick way to adjust the vertical seperation between the 
-// text lines on the oled. So, below, line1 will start on y16, line2 on y29, etc.
+// text lines. Unlike some displays, on the SSD1327, you set
+// the cursor to the BOTTOM of where you want to start printing
+// the next line, not the top. So, instead of line one starting
+// at (0, 0), it starts at (0, 15).
 #define line1 15
 #define line2 29
 #define line3 43
@@ -28,6 +28,11 @@
 #define line7 99
 #define line8 113
 #define line9 127
+
+// Colors are 0x0 (black) to 0xF (white). Both of those are
+// defined in the SSD1327 library. Add some more here:
+#define SSD1327_VERY_DIM 0x7
+#define SSD1327_DIM 0xc
 
 /**
  * @brief UI is the class that controls the display, the alarm, and the LEDs. It displays
@@ -63,16 +68,14 @@ public:
         else {
             Serial.println("SSD1327 allocation failed");
         }
-        display_->clearDisplay();
-        display_->setCursor(0,0);
-        // If you don't do these next two lines, there is no display at all for some reason
-        display_->setTextColor(SSD1327_WHITE);
+        display_->setRotation(0); // 2 flips it 180 degrees
+        display_->setTextColor(SSD1327_DIM); // 0x0 -> 0xF == black -> white
         display_->setFont(&DejaVu_Sans_12);
         display_about_screen();
     }
 
     /**
-     * @brief Updates the bottom 4 lines of the display to show everything about a single
+     * @brief Updates the middle 3 lines of the display to show everything about a single
      * datapoint.
      */
      
@@ -84,25 +87,20 @@ public:
        display_->println(packet->data_name);
        display_->setCursor(0, line5);
        display_->print(packet->data_value);
-       // convert Age to a string of M:SS
+       display_->setCursor(55, line5);
+       display_->print("Age: ");
+       // convert age to a string of M:SS
        int32_t seconds = ((millis() - packet->timestamp) / 1000);
-       char age_buffer[10];
-       String age_str = "Age: ";
+       char age_buffer[6];
        if (seconds < 3600) { // less than 1 hour old
            uint8_t minutes = seconds / 60;
            seconds = seconds % 60;
            sprintf(age_buffer, "%01d:%02d", minutes, seconds);
-           age_str = age_str + age_buffer; // now it's " Age: 1:28"
        }
        else {
-           age_str = age_str + ">1 hr"; // now it's "Age: >1 hr"
+           sprintf(age_buffer, ">1 hr");
        }
-       // pad the space btwn data_value and "Age" to right-justify the age string
-       uint8_t text_padding_size = 17 - age_str.length() - packet->data_value.length();
-       for (uint8_t x = 0; x < text_padding_size; x++) {
-            age_str = " " + age_str;
-        }
-       display_->print(age_str);
+       display_->print(age_buffer);
        display_->setCursor(0, line6);
        if (packet->alarm_code) {
            display_->print(" ** Alarm ");
@@ -123,14 +121,19 @@ public:
     void display_about_screen() {
        update_status_lines("Jim Booth's", "Boat Monitor");
        clear_packet_area();
-       display_->println("Version 2.40");
        display_->setCursor(0, line4);
-       display_->print("11 Nov, 2022");
+       display_->println("As modified by");
+       display_->println(" Butch Smith");
+       display_->setCursor(0, line7);
+       display_->println("Version 2.4.1");
+       display_->println("12 Nov, 2022");
        display_->display();
-       delay(5000);
-       clear_status_area();
-       clear_packet_area();
-
+       delay(2000);
+       display_->invertDisplay(true);
+       delay(2000);
+       display_->invertDisplay(false);
+       delay(2000);
+       display_->clearDisplay();
     }
    
     /**
@@ -145,8 +148,10 @@ public:
     void update_status_lines(String status_str, String status_str2, uint8_t duration_seconds = 1, uint8_t temp_font_size = 1) {
        clear_status_area();
        display_->setTextSize(temp_font_size);
+       display_->setTextColor(SSD1327_VERY_DIM);
        display_->println(status_str);
        display_->print(status_str2);
+       display_->setTextColor(SSD1327_DIM);
        display_->display();
        if (duration_seconds) {
            delay(duration_seconds * 1000);
@@ -162,7 +167,9 @@ public:
 
     void update_bottom_line(String bottom_line_str) {
         clear_bottom_line();
+        display_->setTextColor(SSD1327_VERY_DIM);
         display_->print(bottom_line_str);
+        display_->setTextColor(SSD1327_DIM);
         display_->display();
     }
 
@@ -276,14 +283,15 @@ public:
     }
 
     /**
-     * @brief Make sure system clock is set. Use any time a timestamp is created or
-     * compared to.
+     * @brief Make sure system clock is set. Use this any time a timestamp
+     * is created or compared to.
      */
 
     bool system_time_is_valid() {
         struct tm timeinfo;
         if (!getLocalTime(&timeinfo)) {
                Serial.println("Failed to obtain time");
+               update_bottom_line("Invalid sys time");
                update_status_lines("Invalid sys time", "", 3);
                return false;
         }

@@ -16,7 +16,7 @@
 // #define LORA_BAUD_RATE 115200ULL     // default 115200
 
 
-// BME280 alarm ranges
+// Home alarm ranges
 #define TEMP_CALIBRATION -1.0 // my particular BME280 reads 1.0 Fahrenheit too warm
 #define TEMP_ALARM_RANGE_LOWER 73.0F // s/b 73.0
 #define TEMP_ALARM_RANGE_UPPER 88.0F // s/b 88.0
