@@ -28,13 +28,13 @@ private:
 
     /**
      * @brief The function that will ultimately be run as a Task,
-     * every minute. (But only after being called in start_task_impl(), below.)
+     * every 10 seconds. (But only after being called in start_task_impl(), below.)
      */
     
     void handle_influx_queue_task() {
         while (1) {
             this->handle_influx_queue();
-            vTaskDelay(60000 / portTICK_RATE_MS);
+            vTaskDelay(10000 / portTICK_RATE_MS);
         }
     }
 
@@ -142,12 +142,14 @@ public:
         packet.addField("snr", SNR);
         if (!influxdb_->writePoint(packet)) {
             Serial.println("InfluxDB write failed: " + influxdb_->getLastErrorMessage());
-            ui_->update_status_lines("Waiting for data", "Influx write fail", 2);
+            ui_->update_status_lines("Sending to Influx", "Influx write fail", 2);
+            ui_->update_status_lines("Waiting for data", "");
             return false;
         }
         else {
             Serial.println("InfluxDB write successful");
-            ui_->update_status_lines("Waiting for data", "Influx write OK", 2);
+            ui_->update_status_lines("Sending to Influx", "Influx write OK", 2);
+            ui_->update_status_lines("Waiting for data", "");
             return true;
         }
     }

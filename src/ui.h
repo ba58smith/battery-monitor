@@ -19,14 +19,15 @@
 
 // a quick way to adjust the vertical seperation between the 
 // text lines on the oled. So, below, line1 will start on y16, line2 on y29, etc.
-#define line1 25
-#define line2 39
-#define line3 53
-#define line4 67
-#define line5 81
-#define line6 95
-#define line7 109
-#define line8 123
+#define line1 15
+#define line2 29
+#define line3 43
+#define line4 57
+#define line5 71
+#define line6 85
+#define line7 99
+#define line8 113
+#define line9 127
 
 /**
  * @brief UI is the class that controls the display, the alarm, and the LEDs. It displays
@@ -189,9 +190,8 @@ public:
      * @brief Clears the top two lines of the OLED.
      */
     void clear_status_area() {
-        display_->setCursor(0, 0); // BAS: necessary?
         // This is how Jim did it, and it works
-        for (int y = 0; y <= line3 - 1; y++) {
+        for (int y = 0; y <= line2 + 3; y++) {
             for (int x = 0; x < 127; x++) {
                 display_->drawPixel(x, y, SSD1327_BLACK);
             }
@@ -225,12 +225,12 @@ public:
      * 
      */
     void clear_bottom_line() {
-        for (int y = SCREEN_HEIGHT - 14; y < SCREEN_HEIGHT; y++) {
+        for (int y = line9 - 14; y < SCREEN_HEIGHT; y++) {
             for (int x = 0; x < SCREEN_WIDTH; x++) {
                 display_->drawPixel(x, y, SSD1327_BLACK);
             }
         }
-        display_->setCursor(0, line8);
+        display_->setCursor(0, line9);
         display_->display();
 
     }
