@@ -375,13 +375,13 @@ public:
     }
    
     /**
-    * @brief Add or update current BME280 data to packet_list_
+    * @brief Add or update current BME280 (home) data to packet_list_
     */
 
     void update_BME280_packets() {
        ui_->turnOnLed();
        Serial.println("Updating Home Data");
-       ui_->update_status_lines("Updating Home", "     Data", 3);
+       ui_->update_status_lines("Updating Home", "       Data", 3);
        int16_t alarm = 0;
        float data = (bme280_->readTemperature() * 1.8) + 32.0;
        data = data + TEMP_CALIBRATION; // Corrects for individual BME280 - see config.h

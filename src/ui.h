@@ -31,12 +31,13 @@
 
 // Colors are 0x0 (black) to 0xF (white). Both of those are
 // defined in the SSD1327 library. Add some more here:
-#define SSD1327_VERY_DIM 0x7
-#define SSD1327_DIM 0xc
+#define SSD1327_VERY_DIM 0x9
+#define SSD1327_DIM 0xd
 
 /**
  * @brief UI is the class that controls the display, the alarm, and the LEDs. It displays
- * "status info" on the top (yellow) line, and cycles through all of the other data 
+ * "status info" on the top line, the current date and time on the bottom line,
+ * and cycles through all of the other data 
  * the receiver is getting from the transmitters. This class also controls the Alarm,
  * which is used when any packet's data is "out of range", but could also be used to alert
  * of something like no wifi, or a failed web update.
@@ -87,7 +88,7 @@ public:
        display_->println(packet->data_name);
        display_->setCursor(0, line5);
        display_->print(packet->data_value);
-       display_->setCursor(55, line5);
+       display_->setCursor(49, line5);
        display_->print("Age: ");
        // convert age to a string of M:SS
        int32_t seconds = ((millis() - packet->timestamp) / 1000);
@@ -132,6 +133,10 @@ public:
        display_->invertDisplay(true);
        delay(2000);
        display_->invertDisplay(false);
+       delay(2000);
+       screensaver(true);
+       delay(2000);
+       screensaver(false);
        delay(2000);
        display_->clearDisplay();
     }
@@ -240,6 +245,20 @@ public:
         display_->setCursor(0, line9);
         display_->display();
 
+    }
+
+    /**
+     * @brief Turns the whole display black, saving the pixels from burning into
+     * the display, or wakes the screen up (with some kind of interrupt). On
+     * waking up, the display will show whatever is in the buffer at that time,
+     * because all "print" and "println" commands are still processing in the background,
+     * even while the display is all black.
+     * oled_command(), SSD1327_DISPLAYALLOFF, and SSD1327_NORMALDISPLAY are defined in the
+     * Adafruit SSD1327 library.
+     */
+
+    void screensaver(bool b) {
+        display_->oled_command(b ? SSD1327_DISPLAYALLOFF : SSD1327_NORMALDISPLAY);
     }
 
     /**
