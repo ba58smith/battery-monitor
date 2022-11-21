@@ -9,6 +9,7 @@
 #include "DejaVu_Sans_12.h"
 #include "DejaVu_Sans_12_bold.h"
 #include "alarm.h"
+#include "elapsedMillis.h"
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 128 // OLED display height, in pixels
@@ -53,13 +54,18 @@ private:
 
 public:
     
-    UI(uint8_t blue_led_pin, uint8_t buzzer_pin) : blue_led_pin_{blue_led_pin}, buzzer_pin_{buzzer_pin} {
+    elapsedMillis screensaver_timer_;
+    
+    UI(uint8_t blue_led_pin, uint8_t buzzer_pin) : blue_led_pin_{blue_led_pin},
+       buzzer_pin_{buzzer_pin} {
         display_ = new Adafruit_SSD1327(128, 128, &Wire, OLED_RESET, 1000000);
         alarm_ = new Alarm(buzzer_pin_);
-        pinMode(blue_led_pin, OUTPUT);
-        digitalWrite(blue_led_pin, LOW);
+        pinMode(blue_led_pin_, OUTPUT);
+        digitalWrite(blue_led_pin_, LOW);
         pinMode(LED_BUILTIN, OUTPUT);
         digitalWrite(LED_BUILTIN, LOW);
+        // start the screensaver timer now
+        screensaver_timer_ = 0;
     }
 
     void prepare_display() {
@@ -259,6 +265,22 @@ public:
 
     void screensaver(bool b) {
         display_->oled_command(b ? SSD1327_DISPLAYALLOFF : SSD1327_NORMALDISPLAY);
+    }
+
+    /**
+     * @brief ISR for turning the screensaver off (when the "jiggle switch")
+     * is activated).
+     */
+    
+    void wake_up_display_isr() {
+        static uint64_t last_interrupt_time = 0;
+        uint64_t interrupt_time = millis();
+        // If interrupts come faster than 1000 ms, assume it's a bounce and ignore
+        if (interrupt_time - last_interrupt_time > 1000){
+            screensaver(false);
+            screensaver_timer_ = 0;
+        }
+        last_interrupt_time = interrupt_time;
     }
 
     /**

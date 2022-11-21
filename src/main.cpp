@@ -19,6 +19,7 @@
 
 uint8_t blue_led_pin = 26;
 uint8_t buzzer_pin = 4;
+uint8_t tilt_switch_pin = 13;
  
 uint64_t wifi_check_delay = 30000; // every 30 seconds
 uint64_t bme280_update_delay = 600000; // every 10:00
@@ -26,6 +27,7 @@ bool first_run = true;
 uint64_t packet_display_interval = 3500; // every 3.5 seconds
 uint64_t alarm_email_delay = 300000;   // every 5:00
 uint64_t sys_time_display_delay = 30000; // every 30 seconds
+uint64_t screensaver_delay = 90000; // after 90 seconds
 
 elapsedMillis wifi_check_timer;
 elapsedMillis bme280_timer;
@@ -43,7 +45,14 @@ auto* bme280 = new Adafruit_BME280();
 
 auto* packet_list = new PacketList(ui, bme280);
 
+// to wake up the display with the tilt switch
+void wakeup_interrupt_handler() {
+  ui->wake_up_display_isr();
+}
+
 void setup() {
+  pinMode(tilt_switch_pin, INPUT_PULLDOWN);
+  attachInterrupt(tilt_switch_pin, wakeup_interrupt_handler, RISING);
   // For Serial Monitor display of debug messages
   Serial.begin(115200);
   // Wait for the serial connection
@@ -104,5 +113,11 @@ void loop() {
     net->send_alarm_email(it_begin, it_end);
     alarm_email_timer = 0;
   }
+
+  /* BAS: enable this once the new PCB is working, with the tilt switch
+  if (ui->screensaver_timer_ > screensaver_delay) {
+    ui->screensaver(true);
+  }
+  */
 
 } // loop()
