@@ -36,11 +36,11 @@
 #define SSD1327_DIM 0xd
 
 /**
- * @brief UI is the class that controls the display, the alarm, and the LEDs. It displays
+ * @brief UI is the class that controls the display and the alarm. It displays
  * "status info" on the top line, the current date and time on the bottom line,
  * and cycles through all of the other data 
- * the receiver is getting from the transmitters. This class also controls the Alarm,
- * which is used when any packet's data is "out of range", but could also be used to alert
+ * the receiver is getting from the transmitters. The alarm
+ * is used when any packet's data is "out of range", but could also be used to alert
  * of something like no wifi, or a failed web update.
  */
 
@@ -49,21 +49,16 @@ class UI {
 private:
     Adafruit_SSD1327* display_ = NULL;
     Alarm* alarm_;
-    uint8_t blue_led_pin_;
     uint8_t buzzer_pin_;
+    bool screensaver_on = false;
 
 public:
     
     elapsedMillis screensaver_timer_;
     
-    UI(uint8_t blue_led_pin, uint8_t buzzer_pin) : blue_led_pin_{blue_led_pin},
-       buzzer_pin_{buzzer_pin} {
+    UI(uint8_t buzzer_pin) : buzzer_pin_{buzzer_pin} {
         display_ = new Adafruit_SSD1327(128, 128, &Wire, OLED_RESET, 1000000);
         alarm_ = new Alarm(buzzer_pin_);
-        pinMode(blue_led_pin_, OUTPUT);
-        digitalWrite(blue_led_pin_, LOW);
-        pinMode(LED_BUILTIN, OUTPUT);
-        digitalWrite(LED_BUILTIN, LOW);
         // start the screensaver timer now
         screensaver_timer_ = 0;
     }
@@ -139,10 +134,6 @@ public:
        display_->invertDisplay(true);
        delay(2000);
        display_->invertDisplay(false);
-       delay(2000);
-       screensaver(true);
-       delay(2000);
-       screensaver(false);
        delay(2000);
        display_->clearDisplay();
     }
@@ -264,32 +255,19 @@ public:
      */
 
     void screensaver(bool b) {
-        display_->oled_command(b ? SSD1327_DISPLAYALLOFF : SSD1327_NORMALDISPLAY);
-    }
-
-    /**
-     * @brief ISR for turning the screensaver off (when the "jiggle switch")
-     * is activated).
-     */
-    
-    void wake_up_display_isr() {
-        static uint64_t last_interrupt_time = 0;
-        uint64_t interrupt_time = millis();
-        // If interrupts come faster than 1000 ms, assume it's a bounce and ignore
-        if (interrupt_time - last_interrupt_time > 1000){
-            screensaver(false);
-            screensaver_timer_ = 0;
+        if (screensaver_on != b) {
+            display_->oled_command(b ? SSD1327_DISPLAYALLOFF : SSD1327_NORMALDISPLAY);
+            screensaver_on = b;
         }
-        last_interrupt_time = interrupt_time;
     }
 
     /**
-     * @brief Make a very brief "beep" to alert of something about to happen,
-     * like a new packet being processed.
+     * @brief Returns the value of screensaver_on, for use
+     * in main.cpp
      */
 
-    void beep(uint8_t duration = 5) {
-        alarm_->soundAlarm(duration, 1);
+    bool screensaver_is_on() {
+        return screensaver_on;
     }
 
     /**
@@ -317,7 +295,6 @@ public:
            timeinfo = *tm_to_convert;
        }
        char time_buf[21];
-       //strftime(time_buf, sizeof(time_buf), "%b %d: %I:%M:%S %P", &timeinfo); // BAS: this is too long - make it 2 lines?
        strftime(time_buf, sizeof(time_buf), "%b %d  %I:%M %P", &timeinfo); // this version has no seconds
        String current_time_string = time_buf;
        return current_time_string;
@@ -363,17 +340,6 @@ public:
             Serial.println("Invalid system time");
             update_bottom_line("Invalid sys time");
         }
-    }
-
-
-    void turnOnLed() {
-        digitalWrite(LED_BUILTIN, HIGH);
-        digitalWrite(blue_led_pin_, HIGH);
-    }
-
-    void turnOFFLed() {
-        digitalWrite(LED_BUILTIN, LOW);
-        digitalWrite(blue_led_pin_, LOW);
     }
 
 }; // class UI

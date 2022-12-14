@@ -142,7 +142,6 @@ public:
                if (new_packet.transmitter_address >= ADDRESS_RANGE_LOWER 
                    && new_packet.transmitter_address <= ADDRESS_RANGE_UPPER) {
                    // now we know it's OK to process this packet
-                   ui_->turnOnLed();
                    temp_str = Serial2.readStringUntil(',');
                    if (temp_str.length() == 0) {
                        Serial.println("Error reading data_length from Serial2.");
@@ -231,7 +230,6 @@ public:
                    add_packet_to_influx_queue(new_packet);
                    new_packet_received = true;
                    ui_->update_status_lines("Waiting for data", "");
-                   ui_->turnOFFLed();
                }
            }
        }
@@ -379,7 +377,6 @@ public:
     */
 
     void update_BME280_packets() {
-       ui_->turnOnLed();
        Serial.println("Updating Home Data");
        ui_->update_status_lines("Updating Home", "       Data", 3);
        int16_t alarm = 0;
@@ -408,7 +405,6 @@ public:
        create_generic_packet("Home_humid", "Home", "Humidity", String(data, 0), alarm, HUMIDITY_ALARM_EMAIL_THRESHOLD);
        alarm = 0;
        
-       ui_->turnOFFLed();
        ui_->update_status_lines("Waiting for data", "");
     }
 

@@ -1,4 +1,4 @@
-// Base station (receiver) code
+// Base station (aka receiver, aka battery monitor) code
 
 #include <Arduino.h>
 #include "config.h"
@@ -15,17 +15,23 @@
 // Un-comment "#define LORA_SETUP_REQUIRED", upload and run once, then
 // comment out "#define LORA_SETUP_REQUIRED" and upload.
 // That will prevent writing the NETWORK_ID and BASE_STATION_ADDRESS to EEPROM every run.
-//#define LORA_SETUP_REQUIRED
 
-uint8_t blue_led_pin = 26;
+//#define LORA_SETUP_REQUIRED
+// BAS: change some of the LoRa settings to try to improve the connection. Too many failed attempts for some reason.
+// Higher "spreading factor" improves sensitivity, slows down transmission
+// Lower "bandwidth" improves sensitivity, slows transmission
+// Higher "coding rate" improves sensitivity, slows transmission
+// Higher "preamble" may improve reliability, slows transmission slightly
+
 uint8_t buzzer_pin = 4;
 uint8_t tilt_switch_pin = 13;
+bool cancel_screensaver = false;
  
 uint64_t wifi_check_delay = 30000; // every 30 seconds
 uint64_t bme280_update_delay = 600000; // every 10:00
 bool first_run = true;
-uint64_t packet_display_interval = 3500; // every 3.5 seconds
-uint64_t alarm_email_delay = 300000;   // every 5:00
+uint64_t packet_display_interval = 3000; // every 3 seconds
+uint64_t alarm_email_delay = 45000;   // every 45 seconds
 uint64_t sys_time_display_delay = 30000; // every 30 seconds
 uint64_t screensaver_delay = 90000; // after 90 seconds
 
@@ -37,7 +43,7 @@ elapsedMillis sys_time_display_timer;
 
 auto* lora = new ReyaxLoRa();
 
-auto* ui = new UI(blue_led_pin, buzzer_pin);
+auto* ui = new UI(buzzer_pin);
 
 auto* net = new Internet(ui);
 
@@ -46,13 +52,13 @@ auto* bme280 = new Adafruit_BME280();
 auto* packet_list = new PacketList(ui, bme280);
 
 // to wake up the display with the tilt switch
-void wakeup_interrupt_handler() {
-  ui->wake_up_display_isr();
+void IRAM_ATTR wakeup_isr() {
+  cancel_screensaver = true;
 }
 
 void setup() {
   pinMode(tilt_switch_pin, INPUT_PULLDOWN);
-  attachInterrupt(tilt_switch_pin, wakeup_interrupt_handler, RISING);
+  attachInterrupt(tilt_switch_pin, wakeup_isr, CHANGE);
   // For Serial Monitor display of debug messages
   Serial.begin(115200);
   // Wait for the serial connection
@@ -110,14 +116,18 @@ void loop() {
   if (alarm_email_timer > alarm_email_delay) {
     Packet_it_t it_begin = packet_list->get_packets_begin();
     Packet_it_t it_end = packet_list->get_packets_end();
-    net->send_alarm_email(it_begin, it_end);
+    net->send_alarm_emails(it_begin, it_end);
     alarm_email_timer = 0;
   }
 
-  /* BAS: enable this once the new PCB is working, with the tilt switch
   if (ui->screensaver_timer_ > screensaver_delay) {
     ui->screensaver(true);
+    ui->screensaver_timer_ = 0;
   }
-  */
+
+  if (ui->screensaver_is_on() && cancel_screensaver) {
+    ui->screensaver(false);
+    cancel_screensaver = false;
+  }
 
 } // loop()

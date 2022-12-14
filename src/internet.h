@@ -137,7 +137,7 @@ public:
         Point packet("packets");
         packet.addTag("source", data_source);
         packet.addTag("name", data_name);
-        packet.addField("value", data_value.toFloat());
+        packet.addField("value", data_value.toFloat()); // BAS: modify to handle a data_value like "HiWater"
         packet.addField("alarm", alarm_code);
         packet.addField("rssi", RSSI);
         packet.addField("snr", SNR);
@@ -178,7 +178,7 @@ public:
      * @param end_of_packets An iterator to PacketList::packets.end()
      */
 
-    void send_alarm_email(Packet_it_t first_packet, Packet_it_t end_of_packets) {
+    void send_alarm_emails(Packet_it_t first_packet, Packet_it_t end_of_packets) {
         Serial.println("Looking for alarms that need an email sent");
         ui_->update_status_lines("Looking for old", "alarms to text", 2);
         bool email_attempted = false;
@@ -188,7 +188,7 @@ public:
             for (Packet_it_t it = first_packet; it != end_of_packets; ++it) {
                 if (it->alarm_email_threshold > 0) { // skip all this if the email threshold for this packet is 0
                     uint64_t threshold = it->alarm_email_counter * it->alarm_email_threshold * 60;
-                    if (it->first_alarm_time > 0 && it->first_alarm_time + threshold < now) {
+                    if ((it->alarm_code > 0 && it->alarm_email_counter == 1) || it->first_alarm_time > 0 && it->first_alarm_time + threshold < now) { 
                         tm *first_alarm = localtime(&it->first_alarm_time);
                         String message_text = ui_->date_time_str() + " (Msg # " + it->alarm_email_counter + ")\n" 
                            + it->data_source + " " + it->data_name + ": " + it->data_value + "\nAlarm condition began on\n" 
