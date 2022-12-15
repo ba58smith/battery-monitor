@@ -127,8 +127,8 @@ public:
        display_->println("As modified by");
        display_->println(" Butch Smith");
        display_->setCursor(0, line7);
-       display_->println("Version 2.4.1");
-       display_->println("12 Nov, 2022");
+       display_->println("Version 2.4.2");
+       display_->println("14 Dec, 2022");
        display_->display();
        delay(2000);
        display_->invertDisplay(true);
@@ -295,7 +295,7 @@ public:
            timeinfo = *tm_to_convert;
        }
        char time_buf[21];
-       strftime(time_buf, sizeof(time_buf), "%b %d  %I:%M %P", &timeinfo); // this version has no seconds
+       strftime(time_buf, sizeof(time_buf), "%b %d  %I:%M %P", &timeinfo); // example: Nov 11  12:32 pm
        String current_time_string = time_buf;
        return current_time_string;
     }

@@ -72,7 +72,7 @@ void setup() {
 
   // Add the appropriate "set" method(s) here to change most of
   // the LoRa parameters, if desired.
-  // EXAMPLE: lora.set_output_power(10);
+  // EXAMPLE: lora->set_output_power(10);
 
   initialize_queues();
   packet_list->start_bme280();
