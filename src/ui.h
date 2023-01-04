@@ -50,7 +50,7 @@ private:
     Adafruit_SSD1327* display_ = NULL;
     Alarm* alarm_;
     uint8_t buzzer_pin_;
-    bool screensaver_on = false;
+    bool screensaver_on_ = false;
 
 public:
     
@@ -260,9 +260,9 @@ public:
      */
 
     void screensaver(bool b) {
-        if (screensaver_on != b) {
+        if (screensaver_on_ != b) {
             display_->oled_command(b ? SSD1327_DISPLAYALLOFF : SSD1327_NORMALDISPLAY);
-            screensaver_on = b;
+            screensaver_on_ = b;
         }
     }
 
@@ -272,7 +272,7 @@ public:
      */
 
     bool screensaver_is_on() {
-        return screensaver_on;
+        return screensaver_on_;
     }
 
     /**

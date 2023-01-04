@@ -20,16 +20,16 @@ public:
 
     void parse_alarm_code(uint16_t alarm_code) {
         if (alarm_code > 99) {
-            first_alarm_count = alarm_code / 100 % 10;
-            second_alarm_count = alarm_code / 10 % 10;
-            third_alarm_count = alarm_code % 10;
+            first_alarm_count_ = alarm_code / 100 % 10;
+            second_alarm_count_ = alarm_code / 10 % 10;
+            third_alarm_count_ = alarm_code % 10;
         }
         else if (alarm_code > 9) {
-            first_alarm_count = alarm_code / 10 % 10;
-            second_alarm_count = alarm_code % 10;
+            first_alarm_count_ = alarm_code / 10 % 10;
+            second_alarm_count_ = alarm_code % 10;
         }
         else {
-            first_alarm_count = alarm_code % 10;
+            first_alarm_count_ = alarm_code % 10;
         }
     }
 
@@ -40,7 +40,8 @@ public:
     *    examples: 
     *    X sounds a short alarm (100 ms) X times
     *    XY sounds a short alarm the X times, and a long alarm (300 ms) Y times
-    *    XYZ sounds a short alarm X times, a long alarm Y times, and a short alarm Z times 
+    *    XYZ sounds a short alarm X times, a long alarm Y times, and a short alarm Z times
+    *    
     */
 
     void sound_alarm(uint16_t alarm_code) {
@@ -50,14 +51,14 @@ public:
         parse_alarm_code(alarm_code);
         // now that we have the alarm counts, sound the alarm(s)
         // first, the short beeps
-        soundAlarm(20, first_alarm_count);
+        soundAlarm(20, first_alarm_count_);
         // then the long beeps, if there are any
-        if (second_alarm_count) {
-            soundAlarm(150, second_alarm_count);
+        if (second_alarm_count_) {
+            soundAlarm(150, second_alarm_count_);
         }
         // finally, the last set of short beeps, if there are any
-        if (third_alarm_count) {
-            soundAlarm(20, third_alarm_count);
+        if (third_alarm_count_) {
+            soundAlarm(20, third_alarm_count_);
         }
     }
 
@@ -78,9 +79,9 @@ public:
 
 private:
     uint8_t pin_ = 0;
-    uint8_t first_alarm_count = 0;
-    uint8_t second_alarm_count = 0;
-    uint8_t third_alarm_count = 0;
+    uint8_t first_alarm_count_ = 0;
+    uint8_t second_alarm_count_ = 0;
+    uint8_t third_alarm_count_ = 0;
 
 }; // class Alarm
 
