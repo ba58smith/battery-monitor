@@ -22,8 +22,8 @@
 #define TEMP_ALARM_RANGE_UPPER 88.0F // s/b 88.0
 #define TEMP_ALARM_EMAIL_THRESHOLD 120 // in MINUTES
 #define PRESSURE_ALARM_RANGE_LOWER 29.0F // inches of hg - normal is 29.0 - 31.0
-#define PRESSURE_ALARM_RANGE_UPPER 31.0F // s/b 31.0
-#define PRESSURE_ALARM_EMAIL_THRESHOLD 0 // in MINUTES (Can't think of a pressure-related situation worth a notification)
+#define PRESSURE_ALARM_RANGE_UPPER 29.0F // s/b 31.0 // BAS: change back to 31.0 after testing
+#define PRESSURE_ALARM_EMAIL_THRESHOLD 240 // in MINUTES BAS: change back to 0 after testing
 #define HUMIDITY_ALARM_RANGE_LOWER 30.0F // s/b 30.0 - 50.0 per Mayo Clinic
 #define HUMIDITY_ALARM_RANGE_UPPER 70.0F // s/b 60.0 (50.0 gave too many false alarms)
 #define HUMIDITY_ALARM_EMAIL_THRESHOLD 120 // in MINUTES

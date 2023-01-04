@@ -137,7 +137,7 @@ public:
         Point packet("packets");
         packet.addTag("source", data_source);
         packet.addTag("name", data_name);
-        packet.addField("value", data_value.toFloat()); // BAS: modify to handle a data_value like "HiWater"
+        packet.addField("value", data_value.toFloat());
         packet.addField("alarm", alarm_code);
         packet.addField("rssi", RSSI);
         packet.addField("snr", SNR);
@@ -208,7 +208,10 @@ public:
                             if (email_response_.code.toInt() == 0) { // email sent successfully
                                 it->alarm_email_counter++;
                             }
-                            ui_->sound_alarm(it->alarm_code);
+                            // don't sound alarm w/ 1st email - it just sounded in display_one_packet()
+                            if (it->alarm_email_counter > 2 && ui_->its_daytime()) {
+                                ui_->sound_alarm(it->alarm_code);
+                            }
                         } // end of what happens if an alarm email was attempted for this datapoint
                     } // end of what happens if an alarm email should be sent
                 } // end of what happens if an alarm email is a possibility for this datapoint

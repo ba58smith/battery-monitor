@@ -392,7 +392,7 @@ public:
        data = (bme280_->readPressure() * 0.0002953); // convert from Pascals to inches of mercury
        Serial.println("pressure: " + String(data, 2));
        if (data <= PRESSURE_ALARM_RANGE_LOWER || data >= PRESSURE_ALARM_RANGE_UPPER) {
-           alarm = 123; // 1 short, 2 long, 3 short
+           alarm = 1; // 1 short
        }
        create_generic_packet("Home_press", "Home", "Pressure", String(data, 2), alarm, PRESSURE_ALARM_EMAIL_THRESHOLD);
        alarm = 0;

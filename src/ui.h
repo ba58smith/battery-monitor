@@ -93,14 +93,18 @@ public:
        display_->print("Age: ");
        // convert age to a string of M:SS
        int32_t seconds = ((millis() - packet->timestamp) / 1000);
-       char age_buffer[6];
+       char age_buffer[8];
        if (seconds < 3600) { // less than 1 hour old
            uint8_t minutes = seconds / 60;
            seconds = seconds % 60;
            sprintf(age_buffer, "%01d:%02d", minutes, seconds);
        }
-       else {
-           sprintf(age_buffer, ">1 hr");
+       else if (seconds <= 356400) { // if <= 99 hours, convert to a string of "X hrs"
+           uint8_t hours = (uint8_t)(seconds / 3600);
+           sprintf(age_buffer, "%01d hr", hours);
+       }
+       else { // > 99 hours
+        sprintf(age_buffer, ">99hr");
        }
        display_->print(age_buffer);
        display_->setCursor(0, line6);
@@ -110,7 +114,7 @@ public:
            display_->print(" **");
        }
        display_->display();
-       if (packet->alarm_code && !packet->alarm_has_sounded) {
+       if (packet->alarm_code && !packet->alarm_has_sounded && its_daytime()) {
            alarm_->sound_alarm(packet->alarm_code);
            packet->alarm_has_sounded = true;
        }
@@ -121,14 +125,15 @@ public:
     */
    
     void display_about_screen() {
-       update_status_lines("Jim Booth's", "Boat Monitor");
+       update_status_lines(" Jim Booth's", " Boat Monitor");
        clear_packet_area();
        display_->setCursor(0, line4);
-       display_->println("As modified by");
-       display_->println(" Butch Smith");
+       display_->println(" As modified by");
+       display_->println("    Smartini");
+       display_->println("    Systems");
        display_->setCursor(0, line7);
-       display_->println("Version 2.4.2");
-       display_->println("14 Dec, 2022");
+       display_->println(" Version 2.4.3");
+       display_->println(" 4 Jan, 2023");
        display_->display();
        delay(2000);
        display_->invertDisplay(true);
@@ -317,7 +322,32 @@ public:
         strftime(year_buf, sizeof(year_buf), "%G", &timeinfo);
         String year_string = year_buf;
         uint16_t year_as_int = year_string.toInt();
-        if (year_as_int > 2021) {
+        if (year_as_int > 2022) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
+     * @brief See if it's between 8am and 10pm. Used to determine
+     * if we should sound an alarm.
+     */
+
+    bool its_daytime() {
+        struct tm timeinfo;
+        if (!getLocalTime(&timeinfo)) {
+               Serial.println("Failed to obtain time");
+               update_bottom_line("Invalid sys time");
+               update_status_lines("Invalid sys time", "", 3);
+               return false;
+        }
+        char hour_buf[3];
+        strftime(hour_buf, sizeof(hour_buf), "%H", &timeinfo);
+        String hour_string = hour_buf;
+        uint8_t hour_as_int = hour_string.toInt();
+        if (hour_as_int >= 8 && hour_as_int <= 22) {
             return true;
         }
         else {
