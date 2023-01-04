@@ -383,26 +383,26 @@ public:
        float data = (bme280_->readTemperature() * 1.8) + 32.0;
        data = data + TEMP_CALIBRATION; // Corrects for individual BME280 - see config.h
        Serial.println("temperature: " + String(data, 1));
-       if (data <= TEMP_ALARM_RANGE_LOWER || data >= TEMP_ALARM_RANGE_UPPER) {
-           alarm = 123; // 1 short, 2 long, 3 short
+       if (data <= LOW_TEMP_ALARM_VALUE || data >= HIGH_TEMP_ALARM_VALUE) {
+           alarm = 1; // 1 short
        }
-       create_generic_packet("Home_temp","Home", "Temp (F)", String(data, 0), alarm, TEMP_ALARM_EMAIL_THRESHOLD);
+       create_generic_packet("Home_temp","Home", "Temp (F)", String(data, 0), alarm, TEMP_ALARM_EMAIL_INTERVAL);
        alarm = 0;
        
        data = (bme280_->readPressure() * 0.0002953); // convert from Pascals to inches of mercury
        Serial.println("pressure: " + String(data, 2));
-       if (data <= PRESSURE_ALARM_RANGE_LOWER || data >= PRESSURE_ALARM_RANGE_UPPER) {
+       if (data <= LOW_PRESSURE_ALARM_VALUE || data >= HIGH_PRESSURE_ALARM_VALUE) {
            alarm = 1; // 1 short
        }
-       create_generic_packet("Home_press", "Home", "Pressure", String(data, 2), alarm, PRESSURE_ALARM_EMAIL_THRESHOLD);
+       create_generic_packet("Home_press", "Home", "Pressure", String(data, 2), alarm, PRESSURE_ALARM_EMAIL_INTERVAL);
        alarm = 0;
 
        data = (bme280_->readHumidity());
        Serial.println("humidity: " + String(data, 1));
-       if (data <= HUMIDITY_ALARM_RANGE_LOWER || data >= HUMIDITY_ALARM_RANGE_UPPER) {
+       if (data <= LOW_HUMIDITY_ALARM_VALUE || data >= HIGH_HUMIDITY_ALARM_VALUE) {
            alarm = 123; // 1 short, 2 long, 3 short
        }
-       create_generic_packet("Home_humid", "Home", "Humidity", String(data, 0), alarm, HUMIDITY_ALARM_EMAIL_THRESHOLD);
+       create_generic_packet("Home_humid", "Home", "Humidity", String(data, 0), alarm, HUMIDITY_ALARM_EMAIL_INTERVAL);
        alarm = 0;
        
        ui_->update_status_lines("Waiting for data", "");

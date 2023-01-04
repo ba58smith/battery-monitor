@@ -18,10 +18,15 @@
 
 //#define LORA_SETUP_REQUIRED
 // BAS: change some of the LoRa settings to try to improve the connection. Too many failed attempts for some reason.
+// A detailed study: https://www.researchgate.net/publication/317823578_Evaluation_of_the_Reliability_of_LoRa_Long-Range_Low-Power_Wireless_Communication
+// Two combinations that worked really well in the study:
+// SF=9, CR=4/5, BW=125kHz
+// SF=12, CR=4/8, BW=500kHz
 // Higher "spreading factor" improves sensitivity, slows down transmission
 // Lower "bandwidth" improves sensitivity, slows transmission
 // Higher "coding rate" improves sensitivity, slows transmission
 // Higher "preamble" may improve reliability, slows transmission slightly
+
 
 uint8_t buzzer_pin = 4;
 uint8_t tilt_switch_pin = 13;
