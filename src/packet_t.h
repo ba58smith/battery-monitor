@@ -15,7 +15,7 @@ struct Packet_t {
         int16_t alarm_code = 0;
         bool alarm_has_sounded = false;
         time_t first_alarm_time = 0;  // time_t is seconds since 1/1/1970
-        uint16_t alarm_email_threshold = 0; // in MINUTES - time between email/texts, as long as alarm condition persists
+        uint16_t alarm_email_interval = 0; // in MINUTES - time between email/texts, as long as alarm condition persists
         uint16_t alarm_email_counter = 1; // starts at 1, not 0
         int8_t RSSI = 0;
         int8_t SNR = 0;

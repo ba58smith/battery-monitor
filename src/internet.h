@@ -169,14 +169,14 @@ public:
 
     /**
      * @brief Sends a text-only email. Used to notify user of an alarm
-     * condition that has not cleared in a timely manner. alarm_email_threshold
+     * condition that has not cleared in a timely manner. alarm_email_interval
      * is the number of minutes that an alarm condition must exist for the first
      * email to be sent, and for subsequent emails to be sent if the alarm
      * condition continues. 
      * 
-     * A threshold of 0 for a datapoint means no email will ever be sent.
+     * An interval of 0 for a datapoint means no email will ever be sent.
      * 
-     * A threshold of 999 for a datapoint means ONLY ONE email will ever be sent.
+     * An interval of 999 for a datapoint means ONLY ONE email will ever be sent.
      * @param first_packet An iterator to PacketList::packets.begin()
      * @param end_of_packets An iterator to PacketList::packets.end()
      */
@@ -189,11 +189,11 @@ public:
             time_t now; // create a time_t (the number of seconds since 1/1/1970) called "now"
             time(&now); // set "now" to the system clock's time
             for (Packet_it_t it = first_packet; it != end_of_packets; ++it) {
-                // Send email only if threshold > 0, OR if threshold is 999 and this is the first email (999 means "only one email")
-                if (it->alarm_email_threshold > 0 || (it->alarm_email_threshold == 999 and it->alarm_email_counter == 1)) {
-                    uint64_t threshold = it->alarm_email_counter * it->alarm_email_threshold * 60;
-                    // Send only if this is the FIRST email for this alarm, or if it's been longer than the threshold since the last email
-                    if ((it->alarm_code > 0 && it->alarm_email_counter == 1) || (it->first_alarm_time > 0 && it->first_alarm_time + threshold < now)) { 
+                // Send email only if interval > 0, OR if interval is 999 and this is the first email (999 means "only one email")
+                if (it->alarm_email_interval > 0 || (it->alarm_email_interval == 999 && it->alarm_email_counter == 1)) {
+                    uint64_t interval = it->alarm_email_counter * it->alarm_email_interval * 60;
+                    // Send only if this is the FIRST email for this alarm, or if it's been longer than the interval since the last email
+                    if ((it->alarm_code > 0 && it->alarm_email_counter == 1) || (it->first_alarm_time > 0 && it->first_alarm_time + interval < now)) { 
                         tm *first_alarm = localtime(&it->first_alarm_time);
                         String message_text = ui_->date_time_str() + " (Msg # " + it->alarm_email_counter + ")\n" 
                            + it->data_source + " " + it->data_name + ": " + it->data_value + "\nAlarm condition began on\n" 
@@ -204,7 +204,7 @@ public:
                             connect_to_wifi();
                         }
                         if (connected_to_wifi()) { // check again - connect_to_wifi() might have failed
-                            email_response_ = email_sender_->send(email_recipient_, email_message_);
+                            email_response_ = email_sender_->send(email_recipient_, email_message_); //BAS: some emails will go to Fran, not me
                             email_attempted = true;
                             Serial.println("Sending email");
                             Serial.println("email_response_.status: " + email_response_.status);
