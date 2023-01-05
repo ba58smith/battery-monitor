@@ -22,7 +22,6 @@ private:
     UI* ui_;
     InfluxDBClient* influxdb_;
     EMailSender* email_sender_;
-    String email_recipient_ = String(EMAIL_RECIPIENT);
     EMailSender::EMailMessage email_message_;
     EMailSender::Response email_response_;
 
@@ -204,7 +203,13 @@ public:
                             connect_to_wifi();
                         }
                         if (connected_to_wifi()) { // check again - connect_to_wifi() might have failed
-                            email_response_ = email_sender_->send(email_recipient_, email_message_); //BAS: some emails will go to Fran, not me
+                            if (it->data_source != "Garden") {
+                                email_response_ = email_sender_->send(BS_EMAIL, email_message_);
+                            }
+                            else { // Any tower garden-related email goes to BS and FM
+                                const char* arrayOfEmail[] = {BS_EMAIL, FM_EMAIL};
+                                email_response_ = email_sender_->send(arrayOfEmail, 2, email_message_);
+                            }
                             email_attempted = true;
                             Serial.println("Sending email");
                             Serial.println("email_response_.status: " + email_response_.status);
@@ -213,7 +218,8 @@ public:
                             if (email_response_.code.toInt() == 0) { // email sent successfully
                                 it->alarm_email_counter++;
                             }
-                            // don't sound alarm w/ 1st email - it just sounded in display_one_packet()
+                            // Don't sound alarm w/ 1st email - it just sounded in display_one_packet()
+                            // And don't sound it unless it's daytime
                             if (it->alarm_email_counter > 2 && ui_->its_daytime()) {
                                 ui_->sound_alarm(it->alarm_code);
                             }
