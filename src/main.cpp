@@ -97,6 +97,7 @@ void loop() {
     if (!net->connected_to_wifi()) {
       net->connect_to_wifi();
     }
+    wifi_check_timer = 0;
   }
   
   // read current bme280 data and add its packets to the queue
@@ -109,8 +110,8 @@ void loop() {
   if (packet_display_timer > packet_display_interval) {
     if (packet_list->packet_list_not_empty()) {
       ui->display_one_packet(packet_list->advance_one_packet());
-      packet_display_timer = 0;
     }
+    packet_display_timer = 0;
   }
 
   if (sys_time_display_timer > sys_time_display_delay) {

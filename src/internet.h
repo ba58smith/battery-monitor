@@ -70,12 +70,24 @@ public:
     }
 
     /**
+     * @brief Check to see if we're connected to wifi
+     * 
+     * @return true if status == WL_CONNECTED (an enum for 3)
+     * @return false if status is anything else
+     */
+    bool connected_to_wifi() {
+        wl_status_t wifi_status = WiFi.status();
+        return  wifi_status == WL_CONNECTED;
+    }
+
+
+    /**
      * @brief Called during setup() and before sending data online, if necessary.
      */
 
     bool connect_to_wifi() {
         uint8_t attempts = 0;
-        Serial.print("Connecting to wifi ");
+        Serial.println("Connecting to wifi");
         ui_->before_connect_to_wifi_screen(get_ssid());
         WiFi.begin(wifi_ssid_, wifi_pw_);
         while (WiFi.status() != WL_CONNECTED && attempts < 10) {
@@ -83,9 +95,10 @@ public:
             delay(500);
             attempts++;
         }
-        ui_->after_connect_to_wifi_screen(connected_to_wifi(), get_ip()); // display wifi connection result, good or bad
         Serial.println("");
-        if (!connected_to_wifi()) {
+        bool connected = !(attempts == 10);
+        ui_->after_connect_to_wifi_screen(connected, get_ip()); // display wifi connection result, good or bad
+        if (!connected) { // never connected, with all 10 attempts
             Serial.println("Not connected to wifi");
             return false;
         }
@@ -133,24 +146,29 @@ public:
         if (!connected_to_wifi()) {
             connect_to_wifi();
         }
-        Point packet("packets");
-        packet.addTag("source", data_source);
-        packet.addTag("name", data_name);
-        packet.addField("value", data_value.toFloat());
-        packet.addField("alarm", alarm_code);
-        packet.addField("rssi", RSSI);
-        packet.addField("snr", SNR);
-        if (!influxdb_->writePoint(packet)) {
-            Serial.println("InfluxDB write failed: " + influxdb_->getLastErrorMessage());
-            ui_->update_status_lines("Sending to Influx", "Influx write fail", 2);
-            ui_->update_status_lines("Waiting for data", "");
+        if (!connected_to_wifi()) { // connect_to_wifi() failed
             return false;
         }
         else {
-            Serial.println("InfluxDB write successful");
-            ui_->update_status_lines("Sending to Influx", "Influx write OK", 2);
-            ui_->update_status_lines("Waiting for data", "");
-            return true;
+            Point packet("packets");
+            packet.addTag("source", data_source);
+            packet.addTag("name", data_name);
+            packet.addField("value", data_value.toFloat());
+            packet.addField("alarm", alarm_code);
+            packet.addField("rssi", RSSI);
+            packet.addField("snr", SNR);
+            if (!influxdb_->writePoint(packet)) {
+                Serial.println("InfluxDB write failed: " + influxdb_->getLastErrorMessage());
+                ui_->update_status_lines("Sending to Influx", "Influx write fail", 2);
+                ui_->update_status_lines("Waiting for data", "");
+                return false;
+            }
+            else {
+                Serial.println("InfluxDB write successful");
+                ui_->update_status_lines("Sending to Influx", "Influx write OK", 2);
+                ui_->update_status_lines("Waiting for data", "");
+                return true;
+            }
         }
     }
 
@@ -160,10 +178,6 @@ public:
 
     String get_ip() {
         return WiFi.localIP().toString();
-    }
-
-    bool connected_to_wifi() {
-        return WiFi.status() == WL_CONNECTED;
     }
 
     /**
@@ -188,13 +202,20 @@ public:
             time_t now; // create a time_t (the number of seconds since 1/1/1970) called "now"
             time(&now); // set "now" to the system clock's time
             for (Packet_it_t it = first_packet; it != end_of_packets; ++it) {
-                // Send email only if interval > 0, OR if interval is 999 and this is the first email (999 means "only one email")
-                if (it->alarm_email_interval > 0 || (it->alarm_email_interval == 999 && it->alarm_email_counter == 1)) {
-                    uint64_t interval = it->alarm_email_counter * it->alarm_email_interval * 60;
+                // Consider email only if interval > 0 but != 999
+                if ((it->alarm_email_interval > 0 && it->alarm_email_interval != 999) 
+                    // OR interval == 999 and no email has yet been sent
+                    || (it->alarm_email_interval == 999 && it->alarm_emails_sent == 0)) {
+                    uint64_t interval_seconds = it->alarm_emails_sent * it->alarm_email_interval * 60;
+                    
+                    // Handle edge case where alarm comes in but system time is invalid, so first_alarm_time gets set to 0
+                    if (it->alarm_code > 0 && it->alarm_emails_sent == 0 && it->first_alarm_time == 0) {
+                        time(&it->first_alarm_time); // set to current time
+                    }
                     // Send only if this is the FIRST email for this alarm, or if it's been longer than the interval since the last email
-                    if ((it->alarm_code > 0 && it->alarm_email_counter == 1) || (it->first_alarm_time > 0 && it->first_alarm_time + interval < now)) { 
+                    if ((it->alarm_code > 0 && it->alarm_emails_sent == 0) || (it->first_alarm_time > 0 && it->first_alarm_time + interval_seconds < now)) { 
                         tm *first_alarm = localtime(&it->first_alarm_time);
-                        String message_text = ui_->date_time_str() + " (Msg # " + it->alarm_email_counter + ")\n" 
+                        String message_text = ui_->date_time_str() + " (Msg # " + (it->alarm_emails_sent + 1) + ")\n" 
                            + it->data_source + " " + it->data_name + ": " + it->data_value + "\nAlarm condition began on\n" 
                            + ui_->date_time_str(first_alarm);
                         Serial.println(message_text);
@@ -212,15 +233,14 @@ public:
                             }
                             email_attempted = true;
                             Serial.println("Sending email");
-                            Serial.println("email_response_.status: " + email_response_.status);
                             Serial.println("email_response_.code: " + email_response_.code);
-                            Serial.println("email_response_.desc: " + email_response_.desc);
                             if (email_response_.code.toInt() == 0) { // email sent successfully
-                                it->alarm_email_counter++;
+                                it->alarm_emails_sent++;
                             }
-                            // Don't sound alarm w/ 1st email - it just sounded in display_one_packet()
+                            // Don't sound alarm w/ 1st email - it just sounded in display_one_packet().
+                            // (If only the 1st email has been sent, alarm_emails_sent is now 1)
                             // And don't sound it unless it's daytime
-                            if (it->alarm_email_counter > 2 && ui_->its_daytime()) {
+                            if (it->alarm_emails_sent > 1 && ui_->its_daytime()) {
                                 ui_->sound_alarm(it->alarm_code);
                             }
                         } // end of what happens if an alarm email was attempted for this datapoint
@@ -236,8 +256,7 @@ public:
             ui_->update_bottom_line("Invalid sys time");
             ui_->update_status_lines("Invalid sys time", "", 3);
         }
-        ui_->update_status_lines("Waiting for data", "");
-        
+        ui_->update_status_lines("Waiting for data", ""); 
     }
 
 }; // class Internet

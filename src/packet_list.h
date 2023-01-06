@@ -256,7 +256,7 @@ public:
        packet->alarm_has_sounded = false;
        packet->first_alarm_time = 0;
        packet->alarm_email_interval = 0;
-       packet->alarm_email_counter = 1; // 1, not 0
+       packet->alarm_emails_sent = 0;
        packet->RSSI = 0;
        packet->SNR = 0;
        packet->timestamp = 0;
@@ -270,7 +270,7 @@ public:
     * @param name_of_data  "Voltage", "Water temp", etc.
     * @param value Obvious
     * @param alarm Alarm code
-    * @param alarm_email_interval # of minutes between sending the alarm email (and re-sounding the alarm)
+    * @param alarm_email_interval # of minutes between sending the alarm email and re-sounding the alarm
     */
 
     void create_generic_packet(String id, String source, String name_of_data, String value, int16_t alarm, uint16_t alarm_interval = 0) {
@@ -305,10 +305,8 @@ public:
 
     void add_packet_to_list(Packet_t* packet) {
        if (packets_.empty()) {
-           Serial.println("Adding first packet: " + packet->data_source + " " + packet->data_name);
            packets_.push_back(*packet); // add it to the list
            uint8_t list_size = packets_.size();
-           Serial.println("New packet count: " + String(list_size));
        }
        else { // look for the packet in the list
            bool message_found = false;
@@ -318,7 +316,7 @@ public:
                    it->data_value = packet->data_value;
                    if (!packet->alarm_code) { // there is no alarm
                        it->first_alarm_time = 0;
-                       it->alarm_email_counter = 1; // reset to new packet value: (1, not 0)
+                       it->alarm_emails_sent = 0;
                    }
                    else if (!it->alarm_code && packet->alarm_code) { // alarm code is going from 0 to non-zero
                        it->alarm_has_sounded = false;
@@ -338,15 +336,12 @@ public:
                    it->timestamp = packet->timestamp;
                    it->sent_to_influx = false;
                    message_found = true;
-                   Serial.println("Updating packet: " + packet->data_source + " " + packet->data_name);
                    break;
                }
            }
            if (!message_found) { // it's not already in the list
-               Serial.println("Adding packet: " + packet->data_source + " " + packet->data_name);
                packets_.push_back(*packet); // add it to the list
                uint8_t list_size = packets_.size();
-               Serial.println("New packet count: " + String(list_size));
            }
        }
        // print_packet_list_contents(); // needed only for troubleshooting
@@ -365,7 +360,7 @@ public:
             output = "AlmCode:" + String(it->alarm_code) + ",AlmSnd:" + String(it->alarm_has_sounded) + ",FstAlmTime:" 
             + String(it->first_alarm_time) + ",";
             Serial.println(output);
-            output = "   AlmThsld:" + String(it->alarm_email_interval) + ",EmlCntr:" + String(it->alarm_email_counter) 
+            output = "   AlmIntvl:" + String(it->alarm_email_interval) + ",EmlCntr:" + String(it->alarm_emails_sent) 
             + ",RSSI:" + String(it->RSSI) + ",SNR:" + String(it->SNR)
             + ",Time:" + String(it->timestamp) + ",Snt2Inflx:" + String(it->sent_to_influx);
             Serial.println(output);

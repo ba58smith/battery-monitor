@@ -133,7 +133,7 @@ public:
        display_->println("    Systems");
        display_->setCursor(0, line7);
        display_->println(" Version 2.4.3");
-       display_->println(" 4 Jan, 2023");
+       display_->println(" 5 Jan, 2023");
        display_->display();
        delay(2000);
        display_->invertDisplay(true);
