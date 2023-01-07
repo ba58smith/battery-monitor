@@ -28,7 +28,7 @@
 #define line6 85
 #define line7 99
 #define line8 113
-#define line9 127
+#define line9 126
 
 // Colors are 0x0 (black) to 0xF (white). Both of those are
 // defined in the SSD1327 library. Add some more here:
@@ -132,14 +132,13 @@ public:
        display_->println("    Smartini");
        display_->println("    Systems");
        display_->setCursor(0, line7);
-       display_->println(" Version 2.4.3");
-       display_->println(" 5 Jan, 2023");
+       display_->println(" Version 3.0.0");
+       display_->println(" 6 Jan, 2023");
        display_->display();
        delay(2000);
        display_->invertDisplay(true);
        delay(2000);
        display_->invertDisplay(false);
-       delay(2000);
        display_->clearDisplay();
     }
    

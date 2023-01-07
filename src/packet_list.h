@@ -194,8 +194,7 @@ public:
                            }
                        }
                    }
-                   // this is the last bit of data in the <Data> portion, so we go back to "," as the separator
-                   temp_str = Serial2.readStringUntil(',');
+                   temp_str = Serial2.readStringUntil('%');
                    if (temp_str.length() == 0) {
                        Serial.println("Error reading alarm_email_interval from Serial2.");
                        return false;
@@ -203,6 +202,16 @@ public:
                    else {
                        Serial.println("Alarm email interval = " + temp_str);
                        new_packet.alarm_email_interval = temp_str.toInt();
+                   }
+                   // this is the last bit of data in the <Data> portion, so we go back to "," as the separator
+                   temp_str = Serial2.readStringUntil(',');
+                   if (temp_str.length() == 0) {
+                       Serial.println("Error reading max_alarm_emails from Serial2.");
+                       return false;
+                   }
+                   else {
+                       Serial.println("Max alarm emails = " + temp_str);
+                       new_packet.max_alarm_emails_to_send = temp_str.toInt();
                    }
                    temp_str = Serial2.readStringUntil(',');
                    if (temp_str.length() == 0) {
@@ -255,7 +264,8 @@ public:
        packet->alarm_code = 0;
        packet->alarm_has_sounded = false;
        packet->first_alarm_time = 0;
-       packet->alarm_email_interval = 0;
+       packet->alarm_email_interval = 1; // s/n/b 0: use "max_alarm_emails_to_send = 0" to mean "no emails"
+       packet->max_alarm_emails_to_send = 0;
        packet->alarm_emails_sent = 0;
        packet->RSSI = 0;
        packet->SNR = 0;
@@ -271,9 +281,11 @@ public:
     * @param value Obvious
     * @param alarm Alarm code
     * @param alarm_email_interval # of minutes between sending the alarm email and re-sounding the alarm
+    * @param max_alarm_emails_to_send Obvious
     */
 
-    void create_generic_packet(String id, String source, String name_of_data, String value, int16_t alarm, uint16_t alarm_interval = 0) {
+    void create_generic_packet(String id, String source, String name_of_data, String value, 
+                               int16_t alarm, uint16_t alarm_interval = 1, uint16_t max_alarm_emails = 0) {
        Packet_t new_packet;
        new_packet.unique_id = id;
        new_packet.data_source = source;
@@ -293,6 +305,7 @@ public:
            }
        }
        new_packet.alarm_email_interval = alarm_interval;
+       new_packet.max_alarm_emails_to_send = max_alarm_emails;
        new_packet.timestamp = millis();
        add_packet_to_queue(new_packet);
        add_packet_to_influx_queue(new_packet);
@@ -361,7 +374,7 @@ public:
             + String(it->first_alarm_time) + ",";
             Serial.println(output);
             output = "   AlmIntvl:" + String(it->alarm_email_interval) + ",EmlCntr:" + String(it->alarm_emails_sent) 
-            + ",RSSI:" + String(it->RSSI) + ",SNR:" + String(it->SNR)
+            + "MaxEmls:" + String(it->max_alarm_emails_to_send) + ",RSSI:" + String(it->RSSI) + ",SNR:" + String(it->SNR)
             + ",Time:" + String(it->timestamp) + ",Snt2Inflx:" + String(it->sent_to_influx);
             Serial.println(output);
         }    
@@ -381,7 +394,8 @@ public:
        if (data <= LOW_TEMP_ALARM_VALUE || data >= HIGH_TEMP_ALARM_VALUE) {
            alarm = (uint16_t)TEMP_ALARM_CODE;
        }
-       create_generic_packet("Home_temp","Home", "Temp (F)", String(data, 0), alarm, (uint16_t)TEMP_ALARM_EMAIL_INTERVAL);
+       create_generic_packet("Home_temp","Home", "Temp (F)", String(data, 0), alarm,
+                             (uint16_t)TEMP_ALARM_EMAIL_INTERVAL, (uint16_t)TEMP_ALARM_MAX_EMAILS);
        alarm = 0;
        
        data = (bme280_->readPressure() * 0.0002953); // convert from Pascals to inches of mercury
@@ -389,7 +403,8 @@ public:
        if (data <= LOW_PRESSURE_ALARM_VALUE || data >= HIGH_PRESSURE_ALARM_VALUE) {
            alarm = (uint16_t)PRESSURE_ALARM_CODE;
        }
-       create_generic_packet("Home_press", "Home", "Pressure", String(data, 2), alarm, (uint16_t)PRESSURE_ALARM_EMAIL_INTERVAL);
+       create_generic_packet("Home_press", "Home", "Pressure", String(data, 2), alarm,
+                             (uint16_t)PRESSURE_ALARM_EMAIL_INTERVAL, (uint16_t)PRESSURE_ALARM_MAX_EMAILS);
        alarm = 0;
 
        data = (bme280_->readHumidity());
@@ -397,7 +412,8 @@ public:
        if (data <= LOW_HUMIDITY_ALARM_VALUE || data >= HIGH_HUMIDITY_ALARM_VALUE) {
            alarm = (uint16_t)HUMIDITY_ALARM_CODE;
        }
-       create_generic_packet("Home_humid", "Home", "Humidity", String(data, 0), alarm, (uint16_t)HUMIDITY_ALARM_EMAIL_INTERVAL);
+       create_generic_packet("Home_humid", "Home", "Humidity", String(data, 0), alarm,
+                             (uint16_t)HUMIDITY_ALARM_EMAIL_INTERVAL, (uint16_t)HUMIDITY_ALARM_MAX_EMAILS);
        alarm = 0;
        
        ui_->update_status_lines("Waiting for data", "");

@@ -20,15 +20,18 @@
 #define HIGH_TEMP_ALARM_VALUE 88.0F // s/b 88.0
 #define TEMP_ALARM_CODE 1
 #define TEMP_ALARM_EMAIL_INTERVAL 120 // in MINUTES
+#define TEMP_ALARM_MAX_EMAILS 3
 
 #define LOW_PRESSURE_ALARM_VALUE 29.0F // inches of hg - normal is 29.0 - 31.0
 #define HIGH_PRESSURE_ALARM_VALUE 31.0F // s/b 31.0
 #define PRESSURE_ALARM_CODE 1
-#define PRESSURE_ALARM_EMAIL_INTERVAL 0 // in MINUTES (0 means no email will be sent)
+#define PRESSURE_ALARM_EMAIL_INTERVAL 240 // in MINUTES
+#define PRESSURE_ALARM_MAX_EMAILS 0 // 0 means send no emails
 
 #define LOW_HUMIDITY_ALARM_VALUE 30.0F // s/b 30.0 - 50.0 per Mayo Clinic
 #define HIGH_HUMIDITY_ALARM_VALUE 70.0F // s/b 60.0 (50.0 gave too many false alarms)
 #define HUMIDITY_ALARM_CODE 1
 #define HUMIDITY_ALARM_EMAIL_INTERVAL 120 // in MINUTES
+#define HUMIDITY_ALARM_MAX_EMAILS 3
 
 #endif // _CONFIG_H_

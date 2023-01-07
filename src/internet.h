@@ -144,31 +144,28 @@ public:
         Serial.println("Sending one new packet to InfluxDB");
         ui_->update_status_lines("Sending to Influx", "");
         if (!connected_to_wifi()) {
-            connect_to_wifi();
+            if (!connect_to_wifi()) {
+                return false;
+            }
         }
-        if (!connected_to_wifi()) { // connect_to_wifi() failed
+        Point packet("packets");
+        packet.addTag("source", data_source);
+        packet.addTag("name", data_name);
+        packet.addField("value", data_value.toFloat());
+        packet.addField("alarm", alarm_code);
+        packet.addField("rssi", RSSI);
+        packet.addField("snr", SNR);
+        if (!influxdb_->writePoint(packet)) {
+            Serial.println("InfluxDB write failed: " + influxdb_->getLastErrorMessage());
+            ui_->update_status_lines("Sending to Influx", "Influx write fail", 2);
+            ui_->update_status_lines("Waiting for data", "");
             return false;
         }
         else {
-            Point packet("packets");
-            packet.addTag("source", data_source);
-            packet.addTag("name", data_name);
-            packet.addField("value", data_value.toFloat());
-            packet.addField("alarm", alarm_code);
-            packet.addField("rssi", RSSI);
-            packet.addField("snr", SNR);
-            if (!influxdb_->writePoint(packet)) {
-                Serial.println("InfluxDB write failed: " + influxdb_->getLastErrorMessage());
-                ui_->update_status_lines("Sending to Influx", "Influx write fail", 2);
-                ui_->update_status_lines("Waiting for data", "");
-                return false;
-            }
-            else {
-                Serial.println("InfluxDB write successful");
-                ui_->update_status_lines("Sending to Influx", "Influx write OK", 2);
-                ui_->update_status_lines("Waiting for data", "");
-                return true;
-            }
+            Serial.println("InfluxDB write successful");
+            ui_->update_status_lines("Sending to Influx", "Influx write OK", 2);
+            ui_->update_status_lines("Waiting for data", "");
+            return true;
         }
     }
 
@@ -187,9 +184,8 @@ public:
      * email to be sent, and for subsequent emails to be sent if the alarm
      * condition continues. 
      * 
-     * An interval of 0 for a datapoint means no email will ever be sent.
+     * A max_alarm_emails_to_send of 0 means no email will ever be sent.
      * 
-     * An interval of 999 for a datapoint means ONLY ONE email will ever be sent.
      * @param first_packet An iterator to PacketList::packets.begin()
      * @param end_of_packets An iterator to PacketList::packets.end()
      */
@@ -202,16 +198,13 @@ public:
             time_t now; // create a time_t (the number of seconds since 1/1/1970) called "now"
             time(&now); // set "now" to the system clock's time
             for (Packet_it_t it = first_packet; it != end_of_packets; ++it) {
-                // Consider email only if interval > 0 but != 999
-                if ((it->alarm_email_interval > 0 && it->alarm_email_interval != 999) 
-                    // OR interval == 999 and no email has yet been sent
-                    || (it->alarm_email_interval == 999 && it->alarm_emails_sent == 0)) {
-                    uint64_t interval_seconds = it->alarm_emails_sent * it->alarm_email_interval * 60;
+                if (it->alarm_email_interval > 0 && it->max_alarm_emails_to_send > 0 && it->alarm_emails_sent < it->max_alarm_emails_to_send) {
                     
-                    // Handle edge case where alarm comes in but system time is invalid, so first_alarm_time gets set to 0
+                    // Handle rare case where alarm comes in but system time is invalid, so first_alarm_time gets set to 0
                     if (it->alarm_code > 0 && it->alarm_emails_sent == 0 && it->first_alarm_time == 0) {
                         time(&it->first_alarm_time); // set to current time
                     }
+                    uint64_t interval_seconds = it->alarm_emails_sent * it->alarm_email_interval * 60;
                     // Send only if this is the FIRST email for this alarm, or if it's been longer than the interval since the last email
                     if ((it->alarm_code > 0 && it->alarm_emails_sent == 0) || (it->first_alarm_time > 0 && it->first_alarm_time + interval_seconds < now)) { 
                         tm *first_alarm = localtime(&it->first_alarm_time);
