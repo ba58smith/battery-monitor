@@ -346,7 +346,7 @@ public:
         strftime(hour_buf, sizeof(hour_buf), "%H", &timeinfo);
         String hour_string = hour_buf;
         uint8_t hour_as_int = hour_string.toInt();
-        if (hour_as_int >= 8 && hour_as_int <= 22) {
+        if (hour_as_int >= 8 && hour_as_int < 22) {
             return true;
         }
         else {
