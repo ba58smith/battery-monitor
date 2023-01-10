@@ -21,7 +21,7 @@
 // A detailed study: https://www.researchgate.net/publication/317823578_Evaluation_of_the_Reliability_of_LoRa_Long-Range_Low-Power_Wireless_Communication
 // Two combinations that worked really well in the study:
 // SF=9, CR=4/5, BW=125kHz
-// SF=12, CR=4/8, BW=500kHz
+// SF=12(default), CR=4/8(4), BW=500kHz(9)
 // Higher "spreading factor" improves sensitivity, slows down transmission
 // Lower "bandwidth" improves sensitivity, slows transmission
 // Higher "coding rate" improves sensitivity, slows transmission
@@ -78,6 +78,8 @@ void setup() {
   // Add the appropriate "set" method(s) here to change most of
   // the LoRa parameters, if desired.
   // EXAMPLE: lora->set_output_power(10);
+  lora->set_bandwidth(9);
+  lora->set_coding_rate(4);
 
   initialize_queues();
   packet_list->start_bme280();

@@ -88,7 +88,9 @@ public:
 
     /**
      * @brief set_spread_factor() is used only to change the default
-     * of 12
+     * of 12. The larger the SF is, the better the sensitivity is. But the transmission
+     * time will take longer.
+     * Possible values are 7 - 12.
      */
     
     void set_spread_factor(int8_t spread) {
@@ -97,7 +99,18 @@ public:
 
     /**
      * @brief set_bandwidth() is used only to change the default
-     * of 7
+     * of 7.
+     * <Bandwidth>0~9 list as below
+     * 0 : 7.8KHz (not recommended, over spec.)
+     * 1 : 10.4KHz (not recommended, over spec.)
+     * 2 : 15.6KHz
+     * 3 : 20.8 KHz
+     * 4 : 31.25 KHz
+     * 5 : 41.7 KHz
+     * 6 : 62.5 KHz
+     * 7 : 125 KHz (default).
+     * 8 : 250 KHz
+     * 9 : 500 KHz
      */
 
     void set_bandwidth(int8_t bandwidth) {
@@ -106,7 +119,9 @@ public:
 
     /**
      * @brief set_coding_rate() is used only to change the default
-     * of 1
+     * of 1. A higher coding rate will not increase range, but will make a link more reliable,
+     * and will slow down the transmission.
+     * Values are 1 - 4. (Representing 4/5, 4/6, 4/7, and 4/8, I THINK)
      */
 
     void set_coding_rate(int8_t rate) {
