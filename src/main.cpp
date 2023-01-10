@@ -20,12 +20,12 @@
 // BAS: change some of the LoRa settings to try to improve the connection. Too many failed attempts for some reason.
 // A detailed study: https://www.researchgate.net/publication/317823578_Evaluation_of_the_Reliability_of_LoRa_Long-Range_Low-Power_Wireless_Communication
 // Two combinations that worked really well in the study:
-// SF=9, CR=4/5, BW=125kHz
-// SF=12(default), CR=4/8(4), BW=500kHz(9)
+// SF=9(9), BW=125kHz(7), CR=4/5(1), Preamble(4)
+// SF=12(12), BW=500kHz(9), CR=4/8(4), Preamble(4)
 // Higher "spreading factor" improves sensitivity, slows down transmission
 // Lower "bandwidth" improves sensitivity, slows transmission
 // Higher "coding rate" improves sensitivity, slows transmission
-// Higher "preamble" may improve reliability, slows transmission slightly
+// Higher "preamble" may improve reliability, slows transmission slightly (the study didn't change the preamble; left it at the default of 4)
 
 
 uint8_t buzzer_pin = 4;
@@ -76,10 +76,10 @@ void setup() {
 #endif
 
   // Add the appropriate "set" method(s) here to change most of
-  // the LoRa parameters, if desired.
+  // the LoRa parameters, if desired. If you do, use the appropriate 
+  // AT command to display the result of the change, to make sure it changed. 
   // EXAMPLE: lora->set_output_power(10);
-  lora->set_bandwidth(9);
-  lora->set_coding_rate(4);
+  //          lora->send_and_reply("AT+CRFOP?");
 
   initialize_queues();
   packet_list->start_bme280();

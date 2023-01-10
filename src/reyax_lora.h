@@ -39,8 +39,10 @@ public:
         // Wake up the LoRa and show the responses in the Serial Monitor
         send_and_read_reply("AT");
         send_and_read_reply("AT+VER?");
+        send_and_read_reply("AT+PARAMETER=9,7,1,4"); // SF, BW, CR, Preamble
         send_and_read_reply("AT+NETWORKID?");
         send_and_read_reply("AT+ADDRESS?");
+        send_and_read_reply("AT+PARAMETER?");
     }
 
     
@@ -108,7 +110,7 @@ public:
      * 4 : 31.25 KHz
      * 5 : 41.7 KHz
      * 6 : 62.5 KHz
-     * 7 : 125 KHz (default).
+     * 7 : 125 KHz
      * 8 : 250 KHz
      * 9 : 500 KHz
      */
