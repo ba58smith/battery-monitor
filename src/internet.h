@@ -129,8 +129,12 @@ public:
         if (WiFi.status() == WL_CONNECTED) {
             Packet_t packet;
             while (read_packet_from_influx_queue(&packet)) {
-                send_one_packet_to_influx(packet.data_source, packet.data_name, packet.data_value, packet.alarm_code,
-                                          packet.RSSI, packet.SNR);
+                if (!packet.sent_to_influx) {
+                    if (send_one_packet_to_influx(packet.data_source, packet.data_name, packet.data_value, packet.alarm_code,
+                                              packet.RSSI, packet.SNR)) {
+                                                packet.sent_to_influx = true;
+                                              }
+                }
             }
         }
     }
