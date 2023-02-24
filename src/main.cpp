@@ -94,10 +94,10 @@ void setup() {
 
 void loop() {
   
-  // periodically make sure we're still connected to wifi
+  // periodically make sure we're still connected to wifi and have a valid system time
   if (wifi_check_timer > wifi_check_delay) {
-    if (!net->connected_to_wifi()) {
-      net->connect_to_wifi();
+    if (!net->connected_to_wifi() || !ui->system_time_is_valid()) {
+      net->connect_to_wifi(); // will connect to wifi and set system time
     }
     wifi_check_timer = 0;
   }

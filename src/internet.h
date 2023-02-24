@@ -198,7 +198,13 @@ public:
         Serial.println("Looking for alarms that need an email sent");
         ui_->update_status_lines("Looking for old", "alarms to text", 2);
         bool email_attempted = false;
-        if (ui_->system_time_is_valid()) {
+        if (!ui_->system_time_is_valid()) {
+            Serial.println("INVALID SYSTEM TIME");
+            ui_->update_bottom_line("Invalid sys time");
+            ui_->update_status_lines("Invalid sys time", "", 3);
+            connect_to_wifi(); // if this connects, it will update system time, too
+        }
+        if (ui_->system_time_is_valid()) { // check again, after connect_to_wifi() has run
             time_t now; // create a time_t (the number of seconds since 1/1/1970) called "now"
             time(&now); // set "now" to the system clock's time
             for (Packet_it_t it = first_packet; it != end_of_packets; ++it) {
@@ -248,7 +254,7 @@ public:
                 Serial.println("No emails attempted");
             }
         } // end of what happens if system time is valid
-        else {
+        else { // system time is still invalid
             Serial.println("INVALID SYSTEM TIME");
             ui_->update_bottom_line("Invalid sys time");
             ui_->update_status_lines("Invalid sys time", "", 3);
