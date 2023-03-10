@@ -335,6 +335,11 @@ public:
                        it->alarm_has_sounded = false;
                        it->first_alarm_time = packet->first_alarm_time;
                    }
+                   else if (packet->max_alarm_emails_to_send == 1) { // one-time alarms like "garden fill": reset so email will send
+                       it->alarm_emails_sent = 0;
+                       it->alarm_has_sounded = false;
+                       it->first_alarm_time = packet->first_alarm_time;
+                   }
                    // edge case: datapoint has been in an alarm state, but the system time has been invalid,
                    // so first_alarm_time has not been set yet. See if the system time is now valid, and if
                    // it is, set first_alarm_time.

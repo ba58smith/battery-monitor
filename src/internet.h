@@ -246,10 +246,10 @@ public:
                             if (it->alarm_emails_sent > 1 && ui_->its_daytime()) {
                                 ui_->sound_alarm(it->alarm_code);
                             }
-                        } // end of what happens if an alarm email was attempted for this datapoint
+                        } // end of what happens if an alarm email was attempted for this datapoint (packet)
                     } // end of what happens if an alarm email should be sent
-                } // end of what happens if an alarm email is a possibility for this datapoint
-            } // end of what happens for each packet
+                } // end of what happens if an alarm email is a possibility for this datapoint (packet)
+            } // end of processing all the datapoints (packets)
             if (!email_attempted) {
                 Serial.println("No emails attempted");
             }
